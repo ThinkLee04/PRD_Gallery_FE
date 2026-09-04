@@ -1,0 +1,40 @@
+{
+  "name": "photo-vault-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Photo Vault SPA — React + TypeScript + Vite + Tailwind + TanStack Query.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "biome check src",
+    "lint:fix": "biome check --write src",
+    "format": "biome format --write src",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.62.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.12",
+    "@tailwindcss/vite": "^4.1.0",
+    "@testing-library/react": "^16.1.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.0",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^7.0.2",
+    "vite": "^6.0.0",
+    "vitest": "^5.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true
+  }
+}
