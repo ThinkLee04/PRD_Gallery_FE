@@ -19,6 +19,7 @@ export function CollectionGalleryPage() {
 	const collection = useCollection(collectionId);
 	const gallery = useGallery(collectionId);
 	const [progress, setProgress] = useState<Record<string, number>>({});
+	const [uploadPopupOpen, setUploadPopupOpen] = useState(false);
 	const [editing, setEditing] = useState(false);
 	const fileInput = useRef<HTMLInputElement>(null);
 	const navigate = useNavigate();
@@ -62,7 +63,11 @@ export function CollectionGalleryPage() {
 	}, [gallery]);
 	const selectFiles = (files: FileList | null) => {
 		const selected = Array.from(files ?? []);
-		if (selected.length) upload.mutate(selected);
+		if (selected.length) {
+			setProgress(Object.fromEntries(selected.map((file) => [file.name, 0])));
+			setUploadPopupOpen(true);
+			upload.mutate(selected);
+		}
 	};
 	const albumActions = collection.data?.canManage ? (
 		<details className="relative">
@@ -193,7 +198,9 @@ export function CollectionGalleryPage() {
 					</form>
 				) : null}
 
-				{Object.keys(progress).length > 0 && upload.isPending ? (
+				{!uploadPopupOpen &&
+				Object.keys(progress).length > 0 &&
+				upload.isPending ? (
 					<div className="border-y border-[#e6e3dc] px-4 py-3 text-xs text-[#73716b] sm:px-6">
 						Uploading{" "}
 						{Object.entries(progress).filter(([, value]) => value < 1).length ||
@@ -201,7 +208,7 @@ export function CollectionGalleryPage() {
 						…
 					</div>
 				) : null}
-				{upload.isError ? (
+				{!uploadPopupOpen && upload.isError ? (
 					<p
 						role="alert"
 						className="mx-4 mb-4 border-l-2 border-[#c84d54] pl-3 text-sm text-[#a53e45] sm:mx-6"
@@ -274,7 +281,99 @@ export function CollectionGalleryPage() {
 						) : null}
 					</div>
 				) : null}
+				{uploadPopupOpen && Object.keys(progress).length > 0 ? (
+					<UploadProgressPopup
+						progress={progress}
+						isPending={upload.isPending}
+						error={upload.isError ? upload.error : null}
+						onClose={() => setUploadPopupOpen(false)}
+					/>
+				) : null}
 			</main>
 		</AppShell>
+	);
+}
+
+function UploadProgressPopup({
+	progress,
+	isPending,
+	error,
+	onClose,
+}: {
+	progress: Record<string, number>;
+	isPending: boolean;
+	error: Error | null;
+	onClose: () => void;
+}) {
+	const files = Object.entries(progress);
+	const completed = files.filter(([, value]) => value >= 1).length;
+	const overall = files.length
+		? Math.round(
+				(files.reduce((total, [, value]) => total + value, 0) / files.length) *
+					100,
+			)
+		: 0;
+	const title = error
+		? "Upload stopped"
+		: isPending
+			? `Uploading ${completed} of ${files.length}`
+			: "Uploads received";
+
+	return (
+		<section
+			aria-label="Upload progress"
+			aria-live="polite"
+			className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 border border-[#d8d4cb] bg-[#fdfcf8] sm:left-auto sm:right-5 sm:w-96"
+		>
+			<header className="flex items-center justify-between border-b border-[#e6e3dc] px-4 py-3">
+				<div className="min-w-0">
+					<h2 className="text-sm font-medium">{title}</h2>
+					<p className="mt-0.5 truncate text-xs text-[#73716b]">
+						{error
+							? error.message
+							: isPending
+								? `${overall}% complete`
+								: "Thumbnail processing continues in the album."}
+					</p>
+				</div>
+				<button
+					type="button"
+					onClick={onClose}
+					className="ml-4 text-xs text-[#73716b] underline-offset-4 hover:text-[#1c1c1a] hover:underline"
+				>
+					{isPending ? "Hide" : "Close"}
+				</button>
+			</header>
+			<div className="max-h-56 divide-y divide-[#ece9e2] overflow-y-auto px-4">
+				{files.map(([name, value]) => {
+					const percent = Math.round(value * 100);
+					return (
+						<div key={name} className="py-3">
+							<div className="flex items-center justify-between gap-4 text-xs">
+								<p className="truncate" title={name}>
+									{name}
+								</p>
+								<span className="shrink-0 text-[#73716b]">
+									{percent >= 100 ? "Uploaded" : `${percent}%`}
+								</span>
+							</div>
+							<div
+								role="progressbar"
+								aria-label={`Upload progress for ${name}`}
+								aria-valuemin={0}
+								aria-valuemax={100}
+								aria-valuenow={percent}
+								className="mt-2 h-1 bg-[#e6e3dc]"
+							>
+								<div
+									className={`h-full ${error && percent < 100 ? "bg-[#c84d54]" : "bg-[#1c1c1a]"}`}
+									style={{ width: `${percent}%` }}
+								/>
+							</div>
+						</div>
+					);
+				})}
+			</div>
+		</section>
 	);
 }
