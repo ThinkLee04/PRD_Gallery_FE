@@ -7,23 +7,16 @@ import { GalleryGrid } from "./GalleryGrid";
 import {
 	collectionKeys,
 	useCollection,
+	useCollectionUploaders,
 	useGallery,
 	useRemoveFromCollection,
 } from "./queries";
 import type { GalleryOptions } from "./types";
 import { useUploadFiles } from "./uploads";
 
-function eventInputValue(value: string | null): string {
-	if (!value) return "";
-	const date = new Date(value);
-	return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
-		.toISOString()
-		.slice(0, 16);
-}
-
-function eventIsoValue(value: FormDataEntryValue | null): string | null {
+function eventDateValue(value: FormDataEntryValue | null): string | null {
 	const raw = String(value ?? "");
-	return raw ? new Date(raw).toISOString() : null;
+	return raw || null;
 }
 
 export function CollectionGalleryPage() {
@@ -31,11 +24,12 @@ export function CollectionGalleryPage() {
 	const photoId = useMatch("/albums/:collectionId/photo/:photoId")?.params
 		.photoId;
 	const [galleryOptions, setGalleryOptions] = useState<GalleryOptions>({
-		sort: "captured_at",
+		sort: "captured_desc",
 		media: "all",
-		groupBy: "none",
+		uploaderId: null,
 	});
 	const collection = useCollection(collectionId);
+	const uploaders = useCollectionUploaders(collectionId);
 	const gallery = useGallery(collectionId, galleryOptions);
 	const [progress, setProgress] = useState<Record<string, number>>({});
 	const [uploadPopupOpen, setUploadPopupOpen] = useState(false);
@@ -47,7 +41,7 @@ export function CollectionGalleryPage() {
 		mutationFn: (body: {
 			name: string;
 			description: string | null;
-			eventAt: string | null;
+			eventDate: string | null;
 		}) =>
 			apiFetch(`/v1/collections/${collectionId}`, {
 				method: "PATCH",
@@ -81,6 +75,16 @@ export function CollectionGalleryPage() {
 				queryKey: collectionKeys.photos(collectionId),
 			});
 	}, [collectionId, gallery.error, queryClient]);
+	useEffect(() => {
+		if (
+			galleryOptions.uploaderId !== null &&
+			uploaders.data !== undefined &&
+			!uploaders.data.some(
+				(uploader) => uploader.id === galleryOptions.uploaderId,
+			)
+		)
+			setGalleryOptions((current) => ({ ...current, uploaderId: null }));
+	}, [galleryOptions.uploaderId, uploaders.data]);
 	const loadMore = useCallback(() => {
 		if (!gallery.isFetchingNextPage) void gallery.fetchNextPage();
 	}, [gallery]);
@@ -93,31 +97,60 @@ export function CollectionGalleryPage() {
 		}
 	};
 	const sortLabel =
-		galleryOptions.sort === "captured_at"
-			? "Captured"
-			: galleryOptions.sort === "uploaded_at"
-				? "Uploaded"
-				: "Album order";
+		galleryOptions.sort === "captured_asc"
+			? "Captured ↑"
+			: galleryOptions.sort === "captured_desc"
+				? "Captured ↓"
+				: galleryOptions.sort === "uploaded_asc"
+					? "Uploaded ↑"
+					: galleryOptions.sort === "uploaded_desc"
+						? "Uploaded ↓"
+						: galleryOptions.sort === "alphabet_asc"
+							? "Alphabet ↑"
+							: "Alphabet ↓";
 	const mediaLabel =
 		galleryOptions.media === "all"
 			? "All media"
 			: galleryOptions.media === "image"
 				? "Photos"
 				: "Videos";
+	const selectedUploader = uploaders.data?.find(
+		(uploader) => uploader.id === galleryOptions.uploaderId,
+	);
 	const albumActions = (
 		<div className="flex items-center gap-3">
 			<details className="relative">
 				<summary className="cursor-pointer list-none whitespace-nowrap border-b border-transparent py-1 text-[#53514c] hover:border-[#53514c]">
+					<span className="hidden sm:inline">Sort · </span>
 					{sortLabel}
 				</summary>
-				<div className="absolute right-0 z-50 mt-3 w-44 border border-[#d8d4cb] bg-[#fdfcf8] p-2">
+				<div className="absolute right-0 z-50 mt-3 max-h-[calc(100dvh-6rem)] w-64 overflow-y-auto border border-[#d8d4cb] bg-[#fdfcf8] p-2 shadow-lg shadow-black/5">
 					{(
 						[
-							["captured_at", "Captured time"],
-							["uploaded_at", "Uploaded time"],
-							["position", "Album order"],
+							[
+								"captured_asc",
+								"Captured date · ASC",
+								"Oldest moments first. Uses upload date when capture data is missing.",
+							],
+							[
+								"captured_desc",
+								"Captured date · DESC",
+								"Newest moments first. Uses upload date when capture data is missing.",
+							],
+							[
+								"uploaded_asc",
+								"Uploaded date · ASC",
+								"Files added earliest appear first.",
+							],
+							[
+								"uploaded_desc",
+								"Uploaded date · DESC",
+								"Most recently added files first.",
+							],
+							["alphabet_asc", "Alphabet · ASC", "Filenames from A to Z."],
+							["alphabet_desc", "Alphabet · DESC", "Filenames from Z to A."],
 						] as const
-					).map(([value, label]) => (
+					).map(([value, label, description]) => (
 						<button
 							key={value}
 							type="button"
@@ -125,26 +158,65 @@ export function CollectionGalleryPage() {
 								setGalleryOptions((current) => ({ ...current, sort: value }));
 								event.currentTarget.closest("details")?.removeAttribute("open");
 							}}
-							className={`block w-full px-2 py-2 text-left hover:bg-[#efede7] ${galleryOptions.sort === value ? "font-medium" : ""}`}
+							className={`block w-full px-2 py-2 text-left hover:bg-[#efede7] ${galleryOptions.sort === value ? "bg-[#efede7]" : ""}`}
 						>
-							{label}
+							<span className="block font-medium">{label}</span>
+							<span className="mt-0.5 block text-[11px] leading-4 text-[#73716b]">
+								{description}
+							</span>
 						</button>
 					))}
 				</div>
 			</details>
-			<button
-				type="button"
-				onClick={() =>
-					setGalleryOptions((current) => ({
-						...current,
-						groupBy: current.groupBy === "uploader" ? "none" : "uploader",
-					}))
-				}
-				className={`whitespace-nowrap border-b py-1 ${galleryOptions.groupBy === "uploader" ? "border-[#1c1c1a] font-medium" : "border-transparent text-[#53514c] hover:border-[#53514c]"}`}
-				aria-pressed={galleryOptions.groupBy === "uploader"}
-			>
-				Group by uploader
-			</button>
+			<details className="relative">
+				<summary className="cursor-pointer list-none whitespace-nowrap border-b border-transparent py-1 text-[#53514c] hover:border-[#53514c]">
+					{selectedUploader?.displayName ?? "All uploaders"}
+				</summary>
+				<div className="absolute right-0 z-50 mt-3 max-h-72 w-56 overflow-y-auto border border-[#d8d4cb] bg-[#fdfcf8] p-2 shadow-lg shadow-black/5">
+					<button
+						type="button"
+						onClick={(event) => {
+							setGalleryOptions((current) => ({
+								...current,
+								uploaderId: null,
+							}));
+							event.currentTarget.closest("details")?.removeAttribute("open");
+						}}
+						className={`block w-full px-2 py-2 text-left hover:bg-[#efede7] ${galleryOptions.uploaderId === null ? "font-medium" : ""}`}
+					>
+						All uploaders
+					</button>
+					{uploaders.data?.map((uploader) => (
+						<button
+							key={uploader.id}
+							type="button"
+							onClick={(event) => {
+								setGalleryOptions((current) => ({
+									...current,
+									uploaderId: uploader.id,
+								}));
+								event.currentTarget.closest("details")?.removeAttribute("open");
+							}}
+							className={`flex w-full items-center gap-2 px-2 py-2 text-left hover:bg-[#efede7] ${galleryOptions.uploaderId === uploader.id ? "font-medium" : ""}`}
+						>
+							{uploader.avatarUrl ? (
+								<img
+									src={uploader.avatarUrl}
+									alt=""
+									referrerPolicy="no-referrer"
+									className="h-6 w-6 rounded-full"
+								/>
+							) : (
+								<span className="h-6 w-6 rounded-full bg-[#ddd9d0]" />
+							)}
+							<span className="min-w-0 flex-1 truncate">
+								{uploader.displayName}
+							</span>
+							<span className="text-[#918e87]">{uploader.photoCount}</span>
+						</button>
+					))}
+				</div>
+			</details>
 			<details className="relative">
 				<summary className="cursor-pointer list-none whitespace-nowrap border-b border-transparent py-1 text-[#53514c] hover:border-[#53514c]">
 					{mediaLabel}
@@ -179,7 +251,10 @@ export function CollectionGalleryPage() {
 					<div className="absolute right-0 z-50 mt-3 w-44 border border-[#d8d4cb] bg-[#fdfcf8] p-2">
 						<button
 							type="button"
-							onClick={() => setEditing(true)}
+							onClick={(event) => {
+								setEditing(true);
+								event.currentTarget.closest("details")?.removeAttribute("open");
+							}}
 							className="block w-full px-2 py-2 text-left hover:bg-[#efede7]"
 						>
 							Edit details
@@ -224,12 +299,12 @@ export function CollectionGalleryPage() {
 								{collection.data.description}
 							</p>
 						) : null}
-						{collection.data?.eventAt ? (
+						{collection.data?.eventDate ? (
 							<p className="mt-1 text-xs text-[#918e87]">
 								{new Intl.DateTimeFormat(undefined, {
 									dateStyle: "long",
-									timeStyle: "short",
-								}).format(new Date(collection.data.eventAt))}
+									timeZone: "UTC",
+								}).format(new Date(`${collection.data.eventDate}T00:00:00Z`))}
 							</p>
 						) : null}
 					</div>
@@ -255,7 +330,7 @@ export function CollectionGalleryPage() {
 							edit.mutate({
 								name: String(form.get("name")),
 								description: String(form.get("description")) || null,
-								eventAt: eventIsoValue(form.get("eventAt")),
+								eventDate: eventDateValue(form.get("eventDate")),
 							});
 						}}
 					>
@@ -288,16 +363,16 @@ export function CollectionGalleryPage() {
 							className="mt-2 w-full rounded-[4px] border border-[#d8d4cb] bg-[#fdfcf8] px-3 py-2"
 						/>
 						<label
-							htmlFor="edit-album-event-at"
+							htmlFor="edit-album-event-date"
 							className="mt-4 block text-xs text-[#73716b]"
 						>
-							Event time
+							Event date
 						</label>
 						<input
-							id="edit-album-event-at"
-							name="eventAt"
-							type="datetime-local"
-							defaultValue={eventInputValue(collection.data.eventAt)}
+							id="edit-album-event-date"
+							name="eventDate"
+							type="date"
+							defaultValue={collection.data.eventDate ?? ""}
 							className="mt-2 rounded-[4px] border border-[#d8d4cb] bg-[#fdfcf8] px-3 py-2"
 						/>
 						{edit.isError ? (
@@ -368,7 +443,6 @@ export function CollectionGalleryPage() {
 					loadMore={loadMore}
 					basePath={`/albums/${collectionId}`}
 					photoId={photoId}
-					groupByUploader={galleryOptions.groupBy === "uploader"}
 					onRemove={
 						collection.data?.canManage
 							? (id) => {

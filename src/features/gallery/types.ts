@@ -2,7 +2,7 @@ export interface Collection {
 	id: string;
 	name: string;
 	description: string | null;
-	eventAt: string | null;
+	eventDate: string | null;
 	createdByUserId: string;
 	createdAt: string;
 	updatedAt?: string;
@@ -15,9 +15,22 @@ export interface Collection {
 }
 
 export interface GalleryOptions {
-	sort: "captured_at" | "uploaded_at" | "position";
+	sort:
+		| "captured_asc"
+		| "captured_desc"
+		| "uploaded_asc"
+		| "uploaded_desc"
+		| "alphabet_asc"
+		| "alphabet_desc";
 	media: "all" | "image" | "video";
-	groupBy: "none" | "uploader";
+	uploaderId: string | null;
+}
+
+export interface CollectionUploader {
+	id: string;
+	displayName: string;
+	avatarUrl: string | null;
+	photoCount: number;
 }
 
 export interface MediaAsset {

@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { apiFetchEnvelope } from "../../lib/api";
 import { useLogout } from "../auth/useLogout";
@@ -33,6 +33,19 @@ export function AppShell({
 	});
 	const pendingCount = pending.data?.pages[0]?.data.length ?? 0;
 	const firstName = me.data?.displayName.trim().split(/\s+/)[0] || "Account";
+	useEffect(() => {
+		const closeMenus = (event: PointerEvent) => {
+			const target = event.target;
+			if (!(target instanceof Node)) return;
+			for (const menu of document.querySelectorAll<HTMLDetailsElement>(
+				"details[open]",
+			)) {
+				if (!menu.contains(target)) menu.removeAttribute("open");
+			}
+		};
+		document.addEventListener("pointerdown", closeMenus);
+		return () => document.removeEventListener("pointerdown", closeMenus);
+	}, []);
 	return (
 		<div className="min-h-screen bg-[#f7f6f2] text-[#1c1c1a]">
 			<header className="sticky top-0 z-40 border-b border-[#e6e3dc] bg-[#f7f6f2]/95">
@@ -128,7 +141,7 @@ export function AppShell({
 					</details>
 				</div>
 				{onUpload || actions ? (
-					<div className="flex h-10 items-center justify-start gap-4 overflow-x-auto border-t border-[#ece9e2] px-4 text-xs sm:hidden">
+					<div className="flex h-10 items-center justify-start gap-4 border-t border-[#ece9e2] px-4 text-xs sm:hidden">
 						{onUpload ? (
 							<button
 								type="button"
