@@ -13,10 +13,12 @@ export function LovedPage() {
 	}, [loved]);
 	return (
 		<AppShell>
-			<main className="pt-5">
-				<div className="px-4 pb-5 sm:px-6">
-					<p className="text-sm text-rose-400">Private to you</p>
-					<h1 className="text-3xl font-semibold">Loved</h1>
+			<main>
+				<div className="flex min-h-28 items-end px-4 py-6 sm:px-6">
+					<div>
+						<h1 className="text-2xl font-medium tracking-tight">Loved</h1>
+						<p className="mt-1 text-sm text-[#73716b]">Private to you</p>
+					</div>
 				</div>
 				<GalleryGrid
 					items={items}
@@ -26,7 +28,7 @@ export function LovedPage() {
 					photoId={photoId}
 				/>
 				{!loved.isLoading && items.length === 0 ? (
-					<p className="mt-16 text-center text-zinc-500">
+					<p className="mt-20 text-center text-sm text-[#73716b]">
 						Photos you love will appear here.
 					</p>
 				) : null}

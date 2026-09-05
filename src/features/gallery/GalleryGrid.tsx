@@ -1,5 +1,5 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../lib/api";
 import { useMe } from "../auth/useMe";
@@ -53,6 +53,7 @@ export function GalleryGrid({
 	const toggle = useToggleLoved();
 	const retry = useRetryPhoto();
 	const me = useMe();
+
 	useEffect(() => {
 		const element = parentRef.current;
 		if (!element) return;
@@ -62,43 +63,46 @@ export function GalleryGrid({
 		observer.observe(element);
 		return () => observer.disconnect();
 	}, []);
-	const lanes = width < 640 ? 2 : width < 1024 ? 3 : width < 1536 ? 4 : 5;
-	const columnWidth = (width - (lanes - 1) * 8) / lanes;
+	const lanes = width < 520 ? 2 : width < 900 ? 3 : width < 1320 ? 4 : 5;
+	const gap = width < 640 ? 4 : 6;
+	const columnWidth = (width - (lanes - 1) * gap) / lanes;
 	const virtualizer = useVirtualizer({
 		count: items.length,
 		getScrollElement: () => parentRef.current,
-		estimateSize: (index) => columnWidth / (items[index]?.aspectRatio ?? 1) + 8,
+		estimateSize: (index) =>
+			columnWidth / (items[index]?.aspectRatio ?? 1) + gap,
 		lanes,
-		gap: 8,
+		gap,
 		overscan: lanes * 3,
 		getItemKey: (index) => items[index]?.id ?? index,
 	});
 	const virtualItems = virtualizer.getVirtualItems();
-	const refreshAssets = (photoIdToRefresh: string) => {
-		const previous = lastRefresh.current[photoIdToRefresh] ?? 0;
-		if (Date.now() - previous < 5000) return;
-		lastRefresh.current[photoIdToRefresh] = Date.now();
+	const refreshAssets = (id: string) => {
+		if (Date.now() - (lastRefresh.current[id] ?? 0) < 5000) return;
+		lastRefresh.current[id] = Date.now();
 		void apiFetch<GalleryItem[]>("/v1/photo-assets/urls", {
 			method: "POST",
-			body: JSON.stringify({ photoIds: [photoIdToRefresh] }),
+			body: JSON.stringify({ photoIds: [id] }),
 		}).then(([fresh]) => {
 			if (fresh)
-				setAssetOverrides((current) => ({
-					...current,
-					[photoIdToRefresh]: fresh.assets,
-				}));
+				setAssetOverrides((current) => ({ ...current, [id]: fresh.assets }));
 		});
 	};
 	useEffect(() => {
 		const last = virtualItems.at(-1);
 		if (last && last.index >= items.length - lanes * 2 && hasMore) loadMore();
 	}, [hasMore, items.length, lanes, loadMore, virtualItems]);
+	const closeViewer = useCallback(() => {
+		if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
+		else navigate(basePath, { replace: true });
+	}, [basePath, navigate]);
 
 	return (
 		<>
-			<div
+			<section
 				ref={parentRef}
-				className="h-[calc(100vh-10rem)] overflow-y-auto px-2 sm:px-4"
+				className="h-[calc(100dvh-7rem)] overflow-y-auto px-1"
+				aria-label="Photo gallery"
 			>
 				<div
 					className="relative"
@@ -117,17 +121,17 @@ export function GalleryGrid({
 						return (
 							<article
 								key={item.id}
-								className="group absolute overflow-hidden rounded-lg bg-zinc-900 outline-none ring-white focus-within:ring-2"
+								className="group absolute overflow-hidden rounded-[2px] bg-[#e5e2db]"
 								style={{
 									width: columnWidth,
 									height,
-									transform: `translate(${virtual.lane * (columnWidth + 8)}px, ${virtual.start}px)`,
+									transform: `translate(${virtual.lane * (columnWidth + gap)}px, ${virtual.start}px)`,
 								}}
 							>
 								<button
 									type="button"
 									onClick={() => navigate(`${basePath}/photo/${item.id}`)}
-									className="h-full w-full"
+									className="media-focus h-full w-full"
 									aria-label={`Open ${item.fileName}`}
 								>
 									{assets.sm ? (
@@ -136,15 +140,16 @@ export function GalleryGrid({
 											srcSet={`${assets.sm.url} 480w${assets.md ? `, ${assets.md.url} 1280w` : ""}`}
 											sizes={`${Math.ceil(columnWidth)}px`}
 											loading="lazy"
+											decoding="async"
 											onError={() => refreshAssets(item.id)}
 											alt=""
 											className="h-full w-full object-cover"
 										/>
 									) : (
-										<div className="flex h-full items-center justify-center text-sm text-zinc-500">
+										<div className="flex h-full items-center justify-center text-xs text-[#73716b]">
 											{item.mediaType === "VIDEO"
-												? "Video"
-												: item.status.replaceAll("_", " ")}
+												? "Video · open to play"
+												: item.status.replaceAll("_", " ").toLowerCase()}
 										</div>
 									)}
 								</button>
@@ -152,42 +157,43 @@ export function GalleryGrid({
 									<button
 										type="button"
 										onClick={() => retry.mutate(item.id)}
-										className="absolute left-2 top-2 rounded-full bg-black/70 px-3 py-2 text-xs"
+										className="absolute left-2 top-2 bg-black/75 px-2 py-1 text-xs text-white"
 									>
-										Retry
-									</button>
-								) : null}
-								{onRemove ? (
-									<button
-										type="button"
-										onClick={() => onRemove(item.id)}
-										className="absolute bottom-2 left-2 rounded-full bg-black/70 px-3 py-2 text-xs opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100"
-									>
-										Remove
+										Retry processing
 									</button>
 								) : null}
 								<div
-									className={`pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-3 pt-12 transition ${showInfo ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"}`}
+									className={`pointer-events-none absolute inset-x-0 bottom-0 bg-black/75 p-3 text-white transition-opacity ${showInfo ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"}`}
 								>
 									<p className="truncate text-sm font-medium">
 										{item.fileName}
 									</p>
-									<div className="mt-1 flex items-center gap-2 text-xs text-zinc-300">
-										{item.uploader.avatarUrl ? (
-											<img
-												src={item.uploader.avatarUrl}
-												alt=""
-												referrerPolicy="no-referrer"
-												className="h-5 w-5 rounded-full"
-											/>
-										) : (
-											<span className="h-5 w-5 rounded-full bg-zinc-700" />
-										)}
-										<span className="truncate">
-											{item.uploader.displayName}
+									<p className="mt-0.5 truncate text-xs text-white/75">
+										{formatDate(item)}
+									</p>
+									<div className="mt-2 flex items-center gap-2 text-xs">
+										<span className="flex min-w-0 flex-1 items-center gap-2">
+											{item.uploader.avatarUrl ? (
+												<img
+													src={item.uploader.avatarUrl}
+													alt=""
+													referrerPolicy="no-referrer"
+													className="h-5 w-5 rounded-full"
+												/>
+											) : (
+												<span className="h-5 w-5 rounded-full bg-white/25" />
+											)}
+											<span className="truncate">
+												{item.uploader.displayName}
+											</span>
 										</span>
-										<span>·</span>
-										<time>{formatDate(item)}</time>
+										<span
+											className={
+												item.loved ? "text-[#e66a71]" : "text-white/80"
+											}
+										>
+											{item.loved ? "Loved" : "Love"}
+										</span>
 									</div>
 								</div>
 								<button
@@ -196,25 +202,49 @@ export function GalleryGrid({
 									onClick={() =>
 										toggle.mutate({ id: item.id, loved: item.loved })
 									}
-									className={`absolute right-2 top-2 rounded-full bg-black/60 p-2 text-lg ${item.loved ? "text-rose-500" : "text-white"}`}
+									className={`absolute right-2 top-2 min-h-8 bg-black/70 px-2 text-sm ${item.loved ? "text-[#e66a71]" : "text-white"}`}
 								>
 									{item.loved ? "♥" : "♡"}
 								</button>
 								<button
 									type="button"
+									aria-expanded={showInfo}
 									aria-label="Show photo information"
 									onClick={() => setInfoId(showInfo ? null : item.id)}
-									className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-1 text-xs sm:hidden"
+									className="absolute bottom-2 right-2 min-h-8 bg-black/70 px-2 text-xs text-white sm:hidden"
 								>
-									i
+									Info
 								</button>
+								{onRemove && showInfo ? (
+									<button
+										type="button"
+										onClick={() => onRemove(item.id)}
+										className="absolute bottom-2 left-2 bg-black/75 px-2 py-1 text-xs text-white"
+									>
+										Remove from album
+									</button>
+								) : null}
+								{onRemove ? (
+									<button
+										type="button"
+										onClick={() => onRemove(item.id)}
+										className="absolute bottom-2 left-2 hidden bg-black/75 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:block group-hover:opacity-100 group-focus-within:block group-focus-within:opacity-100 sm:block"
+									>
+										Remove from album
+									</button>
+								) : null}
 							</article>
 						);
 					})}
 				</div>
-			</div>
+			</section>
 			{photoId ? (
-				<PhotoViewer photoId={photoId} onClose={() => navigate(basePath)} />
+				<PhotoViewer
+					photoId={photoId}
+					items={items}
+					basePath={basePath}
+					onClose={closeViewer}
+				/>
 			) : null}
 		</>
 	);
@@ -222,28 +252,57 @@ export function GalleryGrid({
 
 function PhotoViewer({
 	photoId,
+	items,
+	basePath,
 	onClose,
 }: {
 	photoId: string;
+	items: GalleryItem[];
+	basePath: string;
 	onClose: () => void;
 }) {
 	const photo = usePhoto(photoId);
+	const toggle = useToggleLoved();
+	const navigate = useNavigate();
 	const [videoUrl, setVideoUrl] = useState<string | null>(null);
+	const [showInfo, setShowInfo] = useState(false);
+	const [controlsVisible, setControlsVisible] = useState(true);
+	const timer = useRef<number | undefined>(undefined);
 	const data = photo.data;
+	const index = items.findIndex((item) => item.id === photoId);
+	const previous = index > 0 ? items[index - 1] : undefined;
+	const next = index >= 0 ? items[index + 1] : undefined;
+	const revealControls = useCallback(() => {
+		setControlsVisible(true);
+		window.clearTimeout(timer.current);
+		timer.current = window.setTimeout(() => setControlsVisible(false), 3200);
+	}, []);
 	useEffect(() => {
-		const close = (event: KeyboardEvent) => {
+		const originalOverflow = document.body.style.overflow;
+		document.body.style.overflow = "hidden";
+		revealControls();
+		const keys = (event: KeyboardEvent) => {
 			if (event.key === "Escape") onClose();
+			if (event.key === "ArrowLeft" && previous)
+				navigate(`${basePath}/photo/${previous.id}`, { replace: true });
+			if (event.key === "ArrowRight" && next)
+				navigate(`${basePath}/photo/${next.id}`, { replace: true });
+			revealControls();
 		};
-		window.addEventListener("keydown", close);
-		return () => window.removeEventListener("keydown", close);
-	}, [onClose]);
+		window.addEventListener("keydown", keys);
+		return () => {
+			document.body.style.overflow = originalOverflow;
+			window.clearTimeout(timer.current);
+			window.removeEventListener("keydown", keys);
+		};
+	}, [basePath, navigate, next, onClose, previous, revealControls]);
 	useEffect(() => {
-		if (data?.mediaType === "VIDEO" && data.status === "READY") {
+		setVideoUrl(null);
+		if (data?.mediaType === "VIDEO" && data.status === "READY")
 			void apiFetch<{ url: string }>(`/v1/photos/${photoId}/original-url`, {
 				method: "POST",
 				body: JSON.stringify({ purpose: "view" }),
 			}).then((result) => setVideoUrl(result.url));
-		}
 	}, [data?.mediaType, data?.status, photoId]);
 	const download = async () => {
 		const result = await apiFetch<{ url: string }>(
@@ -256,29 +315,52 @@ function PhotoViewer({
 		<div
 			role="dialog"
 			aria-modal="true"
-			className="fixed inset-0 z-50 flex bg-black/95"
+			aria-label={data ? `Viewing ${data.fileName}` : "Photo viewer"}
+			onPointerMove={revealControls}
+			onPointerDown={revealControls}
+			className="fixed inset-0 z-50 flex bg-[#111] text-white"
 		>
-			<button
-				type="button"
-				onClick={onClose}
-				className="absolute left-4 top-4 z-10 rounded-full bg-black/60 px-4 py-2"
+			<div
+				className={`absolute inset-x-0 top-0 z-20 flex items-center justify-between bg-black/65 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] text-sm transition-opacity ${controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
 			>
-				Close
-			</button>
-			<button
-				type="button"
-				onClick={() => void download()}
-				className="absolute right-4 top-4 z-10 rounded-full bg-white px-4 py-2 text-sm font-medium text-black"
-			>
-				Download
-			</button>
-			<div className="flex min-w-0 flex-1 items-center justify-center">
+				<button type="button" onClick={onClose} className="media-focus py-1">
+					Close
+				</button>
+				<div className="flex items-center gap-5">
+					{data ? (
+						<button
+							type="button"
+							onClick={() => toggle.mutate({ id: data.id, loved: data.loved })}
+							className={`media-focus py-1 ${data.loved ? "text-[#e66a71]" : ""}`}
+						>
+							{data.loved ? "Loved" : "Love"}
+						</button>
+					) : null}
+					<button
+						type="button"
+						onClick={() => setShowInfo((value) => !value)}
+						aria-expanded={showInfo}
+						className="media-focus py-1"
+					>
+						Info
+					</button>
+					<button
+						type="button"
+						onClick={() => void download()}
+						disabled={!data}
+						className="media-focus py-1 disabled:opacity-40"
+					>
+						Download
+					</button>
+				</div>
+			</div>
+			<div className="flex min-w-0 flex-1 items-center justify-center px-2 pb-20 pt-16 sm:px-14">
 				{data?.mediaType === "VIDEO" && videoUrl ? (
 					<video
 						src={videoUrl}
 						controls
 						playsInline
-						className="max-h-screen max-w-full"
+						className="max-h-full max-w-full"
 					>
 						<track
 							kind="captions"
@@ -291,22 +373,65 @@ function PhotoViewer({
 					<img
 						src={data.display.url}
 						alt={data.fileName}
-						className="max-h-screen max-w-full object-contain"
+						className="max-h-full max-w-full object-contain"
 					/>
 				) : (
-					<p className="text-zinc-400">
-						{photo.isLoading ? "Loading…" : "Preview unavailable"}
+					<p className="text-sm text-white/60">
+						{photo.isLoading
+							? "Loading…"
+							: "Preview unavailable. Download the original to view it."}
 					</p>
 				)}
 			</div>
+			{previous ? (
+				<button
+					type="button"
+					onClick={() =>
+						navigate(`${basePath}/photo/${previous.id}`, { replace: true })
+					}
+					className={`media-focus absolute left-3 top-1/2 z-10 bg-black/65 px-3 py-2 text-sm transition-opacity ${controlsVisible ? "opacity-100" : "opacity-0"}`}
+				>
+					Previous
+				</button>
+			) : null}
+			{next ? (
+				<button
+					type="button"
+					onClick={() =>
+						navigate(`${basePath}/photo/${next.id}`, { replace: true })
+					}
+					className={`media-focus absolute right-3 top-1/2 z-10 bg-black/65 px-3 py-2 text-sm transition-opacity ${controlsVisible ? "opacity-100" : "opacity-0"}`}
+				>
+					Next
+				</button>
+			) : null}
 			{data ? (
-				<aside className="hidden w-80 border-l border-white/10 p-6 lg:block">
-					<h2 className="break-words font-medium">{data.fileName}</h2>
-					<p className="mt-2 text-sm text-zinc-400">{formatDate(data)}</p>
-					<p className="mt-4 text-sm">
-						Uploaded by {data.uploader.displayName}
+				<div
+					className={`absolute inset-x-0 bottom-0 z-20 bg-black/65 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 text-center text-sm transition-opacity ${controlsVisible || showInfo ? "opacity-100" : "pointer-events-none opacity-0"}`}
+				>
+					<p className="truncate">
+						{data.fileName} · {formatDate(data)}
 					</p>
-				</aside>
+					<div className="mt-1 flex items-center justify-center gap-2 text-xs text-white/70">
+						{data.uploader.avatarUrl ? (
+							<img
+								src={data.uploader.avatarUrl}
+								alt=""
+								referrerPolicy="no-referrer"
+								className="h-5 w-5 rounded-full"
+							/>
+						) : null}
+						<span>{data.uploader.displayName}</span>
+					</div>
+					{showInfo ? (
+						<p className="mt-2 text-xs text-white/55">
+							{data.width && data.height
+								? `${data.width} × ${data.height}`
+								: "Dimensions unavailable"}{" "}
+							· {data.mediaType === "VIDEO" ? "Video" : "Image"}
+						</p>
+					) : null}
+				</div>
 			) : null}
 		</div>
 	);

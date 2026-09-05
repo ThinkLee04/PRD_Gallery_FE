@@ -7,6 +7,14 @@ import {
 import { apiFetch, apiFetchEnvelope } from "../../lib/api";
 import type { Collection, GalleryItem, PhotoDetail } from "./types";
 
+interface GalleryInfiniteData {
+	pages: Array<{
+		data: GalleryItem[];
+		page: { nextCursor: string | null };
+	}>;
+	pageParams: unknown[];
+}
+
 export const collectionKeys = {
 	all: ["collections"] as const,
 	list: (state: "active" | "archived") => ["collections", { state }] as const,
@@ -81,9 +89,32 @@ export function useToggleLoved() {
 			apiFetch<void>(`/v1/photos/${id}/favorite`, {
 				method: loved ? "DELETE" : "PUT",
 			}),
-		onSuccess: () => {
+		onSuccess: (_result, variables) => {
+			client.setQueriesData<GalleryInfiniteData>(
+				{
+					predicate: (query) =>
+						query.queryKey[0] === "collection" &&
+						query.queryKey[2] === "photos",
+				},
+				(current) =>
+					current
+						? {
+								...current,
+								pages: current.pages.map((page) => ({
+									...page,
+									data: page.data.map((item) =>
+										item.id === variables.id
+											? { ...item, loved: !variables.loved }
+											: item,
+									),
+								})),
+							}
+						: current,
+			);
+			client.setQueryData<PhotoDetail>(["photo", variables.id], (current) =>
+				current ? { ...current, loved: !variables.loved } : current,
+			);
 			void client.invalidateQueries({ queryKey: ["loved"] });
-			void client.invalidateQueries({ queryKey: ["collection"] });
 		},
 	});
 }

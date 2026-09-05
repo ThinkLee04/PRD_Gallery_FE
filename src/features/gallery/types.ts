@@ -8,6 +8,9 @@ export interface Collection {
 	archivedAt: string | null;
 	photoCount: number;
 	canManage: boolean;
+	creatorName?: string;
+	creatorAvatarUrl?: string | null;
+	cover?: MediaAsset | null;
 }
 
 export interface MediaAsset {
