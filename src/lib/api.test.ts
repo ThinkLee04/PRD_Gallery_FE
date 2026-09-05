@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, apiFetch } from "./api";
+import { ApiError, apiFetch, apiFetchEnvelope } from "./api";
 
 function stubFetch(response: {
 	status: number;
@@ -54,6 +54,19 @@ describe("apiFetch", () => {
 		await expect(
 			apiFetch<void>("/auth/logout", { method: "POST" }),
 		).resolves.toBeUndefined();
+	});
+
+	it("preserves pagination metadata for infinite queries", async () => {
+		stubFetch({
+			status: 200,
+			body: { data: [{ id: "p1" }], page: { nextCursor: "opaque" } },
+		});
+		await expect(
+			apiFetchEnvelope<Array<{ id: string }>>("/v1/loved"),
+		).resolves.toEqual({
+			data: [{ id: "p1" }],
+			page: { nextCursor: "opaque" },
+		});
 	});
 
 	it("treats an unexpected non-JSON error as INTERNAL_ERROR", async () => {

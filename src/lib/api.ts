@@ -25,9 +25,38 @@ export class ApiError extends Error {
 	}
 }
 
-interface Envelope<T> {
+export interface Envelope<T> {
 	data?: T;
+	page?: { nextCursor: string | null };
 	error?: { code?: string; message?: string };
+}
+
+export async function apiFetchEnvelope<T>(
+	path: string,
+	init: RequestInit = {},
+): Promise<{ data: T; page: { nextCursor: string | null } }> {
+	const response = await fetch(`${BASE_URL}${path}`, {
+		credentials: "include",
+		...init,
+		headers: {
+			...(init.body != null ? { "content-type": "application/json" } : {}),
+			...(init.headers as Record<string, string> | undefined),
+		},
+	});
+	const envelope = (await response
+		.json()
+		.catch(() => null)) as Envelope<T> | null;
+	if (!response.ok)
+		throw new ApiError(
+			envelope?.error?.code ?? "INTERNAL_ERROR",
+			envelope?.error?.message ??
+				`Request failed with status ${response.status}.`,
+			response.status,
+		);
+	return {
+		data: envelope?.data as T,
+		page: envelope?.page ?? { nextCursor: null },
+	};
 }
 
 /**

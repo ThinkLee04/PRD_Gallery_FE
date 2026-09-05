@@ -16,6 +16,9 @@ const USER: Me = {
 	email: "alice@example.com",
 	displayName: "Alice",
 	avatarUrl: null,
+	approvalStatus: "APPROVED",
+	isAdmin: false,
+	vault: { id: "v1", name: "Photo Vault", role: "MEMBER" },
 };
 
 function renderGuard() {
