@@ -12,9 +12,11 @@ interface PendingUser {
 export function AppShell({
 	children,
 	onUpload,
+	actions,
 }: {
 	children: ReactNode;
 	onUpload?: () => void;
+	actions?: ReactNode;
 }) {
 	const me = useMe();
 	const logout = useLogout();
@@ -64,6 +66,9 @@ export function AppShell({
 						>
 							Upload
 						</button>
+					) : null}
+					{actions ? (
+						<div className="mr-5 flex items-center text-sm">{actions}</div>
 					) : null}
 					<details className="group relative">
 						<summary className="flex cursor-pointer list-none items-center gap-2 text-sm text-[#53514c] marker:hidden">

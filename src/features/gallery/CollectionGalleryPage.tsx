@@ -64,6 +64,36 @@ export function CollectionGalleryPage() {
 		const selected = Array.from(files ?? []);
 		if (selected.length) upload.mutate(selected);
 	};
+	const albumActions = collection.data?.canManage ? (
+		<details className="relative">
+			<summary className="cursor-pointer list-none border-b border-transparent py-1 text-[#53514c] hover:border-[#53514c]">
+				More
+			</summary>
+			<div className="absolute right-0 z-50 mt-3 w-44 border border-[#d8d4cb] bg-[#fdfcf8] p-2">
+				<button
+					type="button"
+					onClick={() => setEditing(true)}
+					className="block w-full px-2 py-2 text-left hover:bg-[#efede7]"
+				>
+					Edit details
+				</button>
+				<button
+					type="button"
+					onClick={() => {
+						if (
+							window.confirm(
+								"Archive this album? Its photos will remain in the vault.",
+							)
+						)
+							archive.mutate();
+					}}
+					className="block w-full px-2 py-2 text-left text-[#a53e45] hover:bg-[#efede7]"
+				>
+					Archive album
+				</button>
+			</div>
+		</details>
+	) : undefined;
 
 	return (
 		<AppShell
@@ -72,11 +102,12 @@ export function CollectionGalleryPage() {
 					? () => fileInput.current?.click()
 					: undefined
 			}
+			actions={albumActions}
 		>
 			<main>
-				<header className="flex min-h-28 items-end justify-between gap-5 px-4 py-6 sm:px-6">
+				<header className="px-4 py-5 sm:px-6">
 					<div className="min-w-0">
-						<h1 className="truncate text-2xl font-medium tracking-tight">
+						<h1 className="truncate text-lg font-medium tracking-tight">
 							{collection.data?.name ?? "Loading…"}
 						</h1>
 						{collection.data?.description ? (
@@ -85,57 +116,18 @@ export function CollectionGalleryPage() {
 							</p>
 						) : null}
 					</div>
-					{collection.data?.canManage ? (
-						<div className="flex shrink-0 items-center gap-5 text-sm">
-							<button
-								type="button"
-								onClick={() => fileInput.current?.click()}
-								className="border-b border-[#1c1c1a] py-1 font-medium"
-							>
-								Upload
-							</button>
-							<input
-								ref={fileInput}
-								type="file"
-								multiple
-								accept="image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime"
-								className="sr-only"
-								onChange={(event) => {
-									selectFiles(event.target.files);
-									event.currentTarget.value = "";
-								}}
-							/>
-							<details className="relative">
-								<summary className="cursor-pointer list-none border-b border-transparent py-1 text-[#53514c] hover:border-[#53514c]">
-									More
-								</summary>
-								<div className="absolute right-0 z-20 mt-2 w-44 border border-[#d8d4cb] bg-[#fdfcf8] p-2">
-									<button
-										type="button"
-										onClick={() => setEditing(true)}
-										className="block w-full px-2 py-2 text-left hover:bg-[#efede7]"
-									>
-										Edit details
-									</button>
-									<button
-										type="button"
-										onClick={() => {
-											if (
-												window.confirm(
-													"Archive this album? Its photos will remain in the vault.",
-												)
-											)
-												archive.mutate();
-										}}
-										className="block w-full px-2 py-2 text-left text-[#a53e45] hover:bg-[#efede7]"
-									>
-										Archive album
-									</button>
-								</div>
-							</details>
-						</div>
-					) : null}
 				</header>
+				<input
+					ref={fileInput}
+					type="file"
+					multiple
+					accept="image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime"
+					className="sr-only"
+					onChange={(event) => {
+						selectFiles(event.target.files);
+						event.currentTarget.value = "";
+					}}
+				/>
 
 				{editing && collection.data ? (
 					<form
@@ -217,6 +209,16 @@ export function CollectionGalleryPage() {
 						{upload.error instanceof Error
 							? upload.error.message
 							: "Upload failed."}
+					</p>
+				) : null}
+				{remove.isError ? (
+					<p
+						role="alert"
+						className="mx-4 mb-4 border-l-2 border-[#c84d54] pl-3 text-sm text-[#a53e45] sm:mx-6"
+					>
+						{remove.error instanceof Error
+							? remove.error.message
+							: "Unable to remove this photo from the album."}
 					</p>
 				) : null}
 				{gallery.isError &&
