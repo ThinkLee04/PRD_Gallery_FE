@@ -274,7 +274,7 @@ export function GalleryGrid({
 										toggle.mutate({ id: item.id, loved: item.loved })
 									}
 									title={item.loved ? "Remove from Loved" : "Add to Loved"}
-									className={`media-focus absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/50 backdrop-blur-sm hover:bg-black/75 ${item.loved ? "text-[#e66a71]" : "text-white"}`}
+									className={`media-focus pointer-events-none absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/50 opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/75 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 [@media(hover:none)]:pointer-events-auto [@media(hover:none)]:opacity-100 ${item.loved ? "text-[#e66a71]" : "text-white"}`}
 								>
 									<ViewerIcon name="heart" filled={item.loved} />
 								</button>
