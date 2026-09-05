@@ -43,7 +43,8 @@ type ViewerIconName =
 	| "next"
 	| "previous"
 	| "plus"
-	| "reset";
+	| "reset"
+	| "trash";
 
 function ViewerIcon({
 	name,
@@ -80,6 +81,12 @@ function ViewerIcon({
 			<>
 				<path d="M4 7v5h5" />
 				<path d="M5.5 16a8 8 0 1 0 .5-9l-2 2" />
+			</>
+		),
+		trash: (
+			<>
+				<path d="M4 7h16m-10 4v6m4-6v6" />
+				<path d="m9 7 1-3h4l1 3m3 0-1 14H7L6 7" />
 			</>
 		),
 	};
@@ -192,7 +199,7 @@ export function GalleryGrid({
 						return (
 							<article
 								key={item.id}
-								className="group absolute overflow-hidden rounded-[2px] bg-[#e5e2db]"
+								className="group absolute overflow-hidden rounded-[4px] bg-[#e5e2db] ring-1 ring-black/5"
 								style={{
 									width: columnWidth,
 									height,
@@ -214,7 +221,7 @@ export function GalleryGrid({
 											decoding="async"
 											onError={() => refreshAssets(item.id)}
 											alt=""
-											className="h-full w-full object-cover"
+											className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.015] group-focus-within:scale-[1.015]"
 										/>
 									) : (
 										<div className="flex h-full items-center justify-center text-xs text-[#73716b]">
@@ -228,13 +235,15 @@ export function GalleryGrid({
 									<button
 										type="button"
 										onClick={() => retry.mutate(item.id)}
-										className="absolute left-2 top-2 bg-black/75 px-2 py-1 text-xs text-white"
+										aria-label="Retry processing"
+										title="Retry processing"
+										className={`media-focus absolute left-2 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white backdrop-blur-sm hover:bg-black/75 ${onRemove ? "top-14" : "top-2"}`}
 									>
-										Retry processing
+										<ViewerIcon name="reset" />
 									</button>
 								) : null}
 								<div
-									className={`pointer-events-none absolute inset-x-0 bottom-0 bg-black/75 p-3 text-white transition-opacity ${showInfo ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"}`}
+									className={`pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-12 text-white transition-opacity duration-300 ${showInfo ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"}`}
 								>
 									<p className="truncate text-sm font-medium">
 										{item.fileName}
@@ -242,8 +251,8 @@ export function GalleryGrid({
 									<p className="mt-0.5 truncate text-xs text-white/75">
 										{formatDate(item)}
 									</p>
-									<div className="mt-2 flex items-center gap-2 text-xs">
-										<span className="flex min-w-0 flex-1 items-center gap-2">
+									<div className="mt-2 flex items-center text-xs">
+										<span className="flex min-w-0 items-center gap-2 text-white/85">
 											{item.uploader.avatarUrl ? (
 												<img
 													src={item.uploader.avatarUrl}
@@ -258,13 +267,6 @@ export function GalleryGrid({
 												{item.uploader.displayName}
 											</span>
 										</span>
-										<span
-											className={
-												item.loved ? "text-[#e66a71]" : "text-white/80"
-											}
-										>
-											{item.loved ? "Loved" : "Love"}
-										</span>
 									</div>
 								</div>
 								<button
@@ -273,35 +275,30 @@ export function GalleryGrid({
 									onClick={() =>
 										toggle.mutate({ id: item.id, loved: item.loved })
 									}
-									className={`absolute right-2 top-2 flex h-9 w-9 items-center justify-center bg-black/70 text-lg leading-none ${item.loved ? "text-[#e66a71]" : "text-white"}`}
+									title={item.loved ? "Remove from Loved" : "Add to Loved"}
+									className={`media-focus absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/50 backdrop-blur-sm hover:bg-black/75 ${item.loved ? "text-[#e66a71]" : "text-white"}`}
 								>
-									{item.loved ? "♥" : "♡"}
+									<ViewerIcon name="heart" filled={item.loved} />
 								</button>
 								<button
 									type="button"
 									aria-expanded={showInfo}
 									aria-label="Show photo information"
 									onClick={() => setInfoId(showInfo ? null : item.id)}
-									className="absolute bottom-2 right-2 min-h-8 bg-black/70 px-2 text-xs text-white sm:hidden"
+									title="Photo information"
+									className={`media-focus absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white backdrop-blur-sm sm:hidden ${showInfo ? "bg-white/20" : ""}`}
 								>
-									Info
+									<ViewerIcon name="info" />
 								</button>
-								{onRemove && showInfo ? (
-									<button
-										type="button"
-										onClick={() => onRemove(item.id)}
-										className="absolute bottom-2 left-2 bg-black/75 px-2 py-1 text-xs text-white"
-									>
-										Remove from album
-									</button>
-								) : null}
 								{onRemove ? (
 									<button
 										type="button"
 										onClick={() => onRemove(item.id)}
-										className="absolute bottom-2 left-2 hidden bg-black/75 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:block group-hover:opacity-100 group-focus-within:block group-focus-within:opacity-100 sm:block"
+										aria-label="Remove from album"
+										title="Remove from album"
+										className={`media-focus absolute left-2 top-2 h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white backdrop-blur-sm transition-opacity hover:bg-black/75 ${showInfo ? "flex" : "hidden sm:flex sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"}`}
 									>
-										Remove from album
+										<ViewerIcon name="trash" />
 									</button>
 								) : null}
 							</article>
@@ -451,7 +448,7 @@ function PhotoViewer({
 			aria-label={data ? `Viewing ${data.fileName}` : "Photo viewer"}
 			onPointerMove={revealControls}
 			onPointerDown={revealControls}
-			className="fixed inset-0 z-50 flex bg-[#111] text-white"
+			className="fixed inset-0 z-50 flex bg-black/90 text-white backdrop-blur-sm"
 		>
 			<div
 				className={`absolute inset-x-0 top-0 z-20 flex items-center justify-between bg-gradient-to-b from-black/75 to-transparent px-4 pb-8 pt-[max(1rem,env(safe-area-inset-top))] transition-opacity ${controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
