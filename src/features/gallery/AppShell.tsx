@@ -52,20 +52,24 @@ export function AppShell({
 				<div className="flex h-12 items-center px-4 sm:px-6">
 					<nav
 						aria-label="Primary"
-						className="flex flex-1 items-center gap-2 text-sm"
+						className="flex flex-1 items-center gap-3 text-sm"
 					>
 						<NavLink
 							to="/albums"
 							className={({ isActive }) =>
-								`border px-3 py-1.5 transition-colors ${isActive ? "border-[#c9c5bc] bg-[#fdfcf8] text-[#1c1c1a]" : "border-[#e6e3dc] text-[#73716b] hover:border-[#c9c5bc] hover:bg-[#efede7] hover:text-[#1c1c1a]"}`
+								`border-b py-1 ${isActive ? "border-[#1c1c1a] text-[#1c1c1a]" : "border-transparent text-[#73716b] hover:text-[#1c1c1a]"}`
 							}
 						>
 							Albums
 						</NavLink>
+						<span
+							aria-hidden="true"
+							className="h-4 border-l border-[#d8d4cb]"
+						/>
 						<NavLink
 							to="/loved"
 							className={({ isActive }) =>
-								`border px-3 py-1.5 transition-colors ${isActive ? "border-[#c9c5bc] bg-[#fdfcf8] text-[#1c1c1a]" : "border-[#e6e3dc] text-[#73716b] hover:border-[#c9c5bc] hover:bg-[#efede7] hover:text-[#1c1c1a]"}`
+								`border-b py-1 ${isActive ? "border-[#1c1c1a] text-[#1c1c1a]" : "border-transparent text-[#73716b] hover:text-[#1c1c1a]"}`
 							}
 						>
 							Loved
@@ -77,7 +81,7 @@ export function AppShell({
 								<button
 									type="button"
 									onClick={onUpload}
-									className="border-b border-[#1c1c1a] py-1 font-medium"
+									className="rounded-full bg-[#1c1c1a] px-3 py-1.5 font-medium text-white transition-colors hover:bg-[#3a3935]"
 								>
 									Upload
 								</button>
@@ -86,7 +90,7 @@ export function AppShell({
 						</div>
 					) : null}
 					<details className="group relative">
-						<summary className="flex cursor-pointer list-none items-center gap-2 text-sm text-[#53514c] marker:hidden">
+						<summary className="flex cursor-pointer list-none items-center gap-2 rounded-full bg-[#eae7df] px-2.5 py-1.5 text-sm text-[#53514c] transition-colors marker:hidden hover:bg-[#dfdbd2]">
 							{me.data?.avatarUrl ? (
 								<img
 									src={me.data.avatarUrl}
@@ -146,7 +150,7 @@ export function AppShell({
 							<button
 								type="button"
 								onClick={onUpload}
-								className="border-b border-[#1c1c1a] py-1 font-medium"
+								className="rounded-full bg-[#1c1c1a] px-3 py-1.5 font-medium text-white transition-colors hover:bg-[#3a3935]"
 							>
 								Upload
 							</button>
