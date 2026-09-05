@@ -133,14 +133,34 @@ export function useRetryPhoto() {
 
 export function useRemoveFromCollection(collectionId: string) {
 	const client = useQueryClient();
+	const queryKey = collectionKeys.photos(collectionId);
 	return useMutation({
 		mutationFn: (photoId: string) =>
 			apiFetch<void>(`/v1/collections/${collectionId}/photos/${photoId}`, {
 				method: "DELETE",
 			}),
-		onSuccess: () => {
+		onMutate: async (photoId) => {
+			await client.cancelQueries({ queryKey });
+			const previous = client.getQueryData<GalleryInfiniteData>(queryKey);
+			client.setQueryData<GalleryInfiniteData>(queryKey, (current) =>
+				current
+					? {
+							...current,
+							pages: current.pages.map((page) => ({
+								...page,
+								data: page.data.filter((item) => item.id !== photoId),
+							})),
+						}
+					: current,
+			);
+			return { previous };
+		},
+		onError: (_error, _photoId, context) => {
+			if (context?.previous) client.setQueryData(queryKey, context.previous);
+		},
+		onSettled: () => {
 			void client.invalidateQueries({
-				queryKey: collectionKeys.photos(collectionId),
+				queryKey,
 			});
 			void client.invalidateQueries({
 				queryKey: collectionKeys.detail(collectionId),
