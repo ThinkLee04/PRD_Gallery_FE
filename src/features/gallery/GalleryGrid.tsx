@@ -1,5 +1,11 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	type PointerEvent as ReactPointerEvent,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../lib/api";
 import { useMe } from "../auth/useMe";
@@ -267,16 +273,41 @@ function PhotoViewer({
 	const [videoUrl, setVideoUrl] = useState<string | null>(null);
 	const [showInfo, setShowInfo] = useState(false);
 	const [controlsVisible, setControlsVisible] = useState(true);
+	const [zoom, setZoom] = useState(1);
+	const [pan, setPan] = useState({ x: 0, y: 0 });
+	const drag = useRef<{
+		pointerId: number;
+		x: number;
+		y: number;
+		panX: number;
+		panY: number;
+	} | null>(null);
 	const timer = useRef<number | undefined>(undefined);
 	const data = photo.data;
 	const index = items.findIndex((item) => item.id === photoId);
 	const previous = index > 0 ? items[index - 1] : undefined;
 	const next = index >= 0 ? items[index + 1] : undefined;
+	const isZoomable = data?.mediaType === "IMAGE" && Boolean(data.display);
+	const changeZoom = useCallback((change: number) => {
+		setZoom((current) =>
+			Math.min(4, Math.max(1, Math.round((current + change) * 4) / 4)),
+		);
+	}, []);
+	const resetZoom = useCallback(() => {
+		setZoom(1);
+		setPan({ x: 0, y: 0 });
+	}, []);
 	const revealControls = useCallback(() => {
 		setControlsVisible(true);
 		window.clearTimeout(timer.current);
 		timer.current = window.setTimeout(() => setControlsVisible(false), 3200);
 	}, []);
+	useEffect(() => {
+		if (photoId) resetZoom();
+	}, [photoId, resetZoom]);
+	useEffect(() => {
+		if (zoom === 1) setPan({ x: 0, y: 0 });
+	}, [zoom]);
 	useEffect(() => {
 		const originalOverflow = document.body.style.overflow;
 		document.body.style.overflow = "hidden";
@@ -287,6 +318,11 @@ function PhotoViewer({
 				navigate(`${basePath}/photo/${previous.id}`, { replace: true });
 			if (event.key === "ArrowRight" && next)
 				navigate(`${basePath}/photo/${next.id}`, { replace: true });
+			if (isZoomable && (event.key === "+" || event.key === "="))
+				changeZoom(0.25);
+			if (isZoomable && (event.key === "-" || event.key === "_"))
+				changeZoom(-0.25);
+			if (isZoomable && event.key === "0") resetZoom();
 			revealControls();
 		};
 		window.addEventListener("keydown", keys);
@@ -295,7 +331,17 @@ function PhotoViewer({
 			window.clearTimeout(timer.current);
 			window.removeEventListener("keydown", keys);
 		};
-	}, [basePath, navigate, next, onClose, previous, revealControls]);
+	}, [
+		basePath,
+		changeZoom,
+		isZoomable,
+		navigate,
+		next,
+		onClose,
+		previous,
+		resetZoom,
+		revealControls,
+	]);
 	useEffect(() => {
 		setVideoUrl(null);
 		if (data?.mediaType === "VIDEO" && data.status === "READY")
@@ -310,6 +356,28 @@ function PhotoViewer({
 			{ method: "POST", body: JSON.stringify({ purpose: "download" }) },
 		);
 		window.location.assign(result.url);
+	};
+	const startPan = (event: ReactPointerEvent<HTMLImageElement>) => {
+		if (zoom <= 1) return;
+		event.currentTarget.setPointerCapture(event.pointerId);
+		drag.current = {
+			pointerId: event.pointerId,
+			x: event.clientX,
+			y: event.clientY,
+			panX: pan.x,
+			panY: pan.y,
+		};
+	};
+	const movePan = (event: ReactPointerEvent<HTMLImageElement>) => {
+		const start = drag.current;
+		if (!start || start.pointerId !== event.pointerId) return;
+		setPan({
+			x: start.panX + event.clientX - start.x,
+			y: start.panY + event.clientY - start.y,
+		});
+	};
+	const stopPan = (event: ReactPointerEvent<HTMLImageElement>) => {
+		if (drag.current?.pointerId === event.pointerId) drag.current = null;
 	};
 	return (
 		<div
@@ -354,7 +422,14 @@ function PhotoViewer({
 					</button>
 				</div>
 			</div>
-			<div className="flex min-w-0 flex-1 items-center justify-center px-2 pb-20 pt-16 sm:px-14">
+			<div
+				className="flex min-w-0 flex-1 items-center justify-center overflow-hidden px-2 pb-20 pt-16 sm:px-14"
+				onWheel={(event) => {
+					if (!isZoomable) return;
+					event.preventDefault();
+					changeZoom(event.deltaY < 0 ? 0.25 : -0.25);
+				}}
+			>
 				{data?.mediaType === "VIDEO" && videoUrl ? (
 					<video
 						src={videoUrl}
@@ -373,7 +448,17 @@ function PhotoViewer({
 					<img
 						src={data.display.url}
 						alt={data.fileName}
-						className="max-h-full max-w-full object-contain"
+						draggable={false}
+						onDoubleClick={() => (zoom === 1 ? changeZoom(1) : resetZoom())}
+						onPointerDown={startPan}
+						onPointerMove={movePan}
+						onPointerUp={stopPan}
+						onPointerCancel={stopPan}
+						className={`max-h-full max-w-full touch-none select-none object-contain ${zoom > 1 ? "cursor-grab active:cursor-grabbing" : "cursor-zoom-in"}`}
+						style={{
+							transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
+							transition: drag.current ? "none" : "transform 150ms ease-out",
+						}}
 					/>
 				) : (
 					<p className="text-sm text-white/60">
@@ -383,6 +468,39 @@ function PhotoViewer({
 					</p>
 				)}
 			</div>
+			{isZoomable ? (
+				<fieldset
+					className={`absolute bottom-24 left-1/2 z-30 flex -translate-x-1/2 items-center border border-white/15 bg-black/70 text-sm transition-opacity ${controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
+				>
+					<legend className="sr-only">Image zoom controls</legend>
+					<button
+						type="button"
+						onClick={() => changeZoom(-0.25)}
+						disabled={zoom <= 1}
+						aria-label="Zoom out"
+						className="media-focus min-h-10 min-w-10 text-lg disabled:opacity-35"
+					>
+						âˆ’
+					</button>
+					<button
+						type="button"
+						onClick={resetZoom}
+						aria-label="Reset zoom"
+						className="media-focus min-h-10 min-w-16 border-x border-white/15 px-2 text-xs tabular-nums"
+					>
+						{Math.round(zoom * 100)}%
+					</button>
+					<button
+						type="button"
+						onClick={() => changeZoom(0.25)}
+						disabled={zoom >= 4}
+						aria-label="Zoom in"
+						className="media-focus min-h-10 min-w-10 text-lg disabled:opacity-35"
+					>
+						+
+					</button>
+				</fieldset>
+			) : null}
 			{previous ? (
 				<button
 					type="button"

@@ -4,7 +4,8 @@ import { defineConfig } from "vitest/config";
 
 // Vite + Vitest configuration.
 // Dev proxy keeps the SPA same-origin with the API so HttpOnly cookies flow
-// naturally (prod: Caddy serves the build and proxies /v1 + /auth).
+// naturally. In production, Vercel serves the SPA and the browser calls the
+// separately hosted API through VITE_API_BASE_URL.
 export default defineConfig({
 	plugins: [react(), tailwindcss()],
 	server: {
