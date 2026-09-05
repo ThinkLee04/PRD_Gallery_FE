@@ -193,9 +193,7 @@ export function GalleryGrid({
 						const showInfo = infoId === item.id;
 						const assets = assetOverrides[item.id] ?? item.assets;
 						const canRetry =
-							item.status === "FAILED" &&
-							(me.data?.vault?.role === "OWNER" ||
-								item.uploader.id === me.data?.id);
+							item.status === "FAILED" && Boolean(me.data?.vault);
 						return (
 							<article
 								key={item.id}
