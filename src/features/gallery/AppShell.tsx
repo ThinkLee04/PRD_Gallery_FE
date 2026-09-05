@@ -52,12 +52,12 @@ export function AppShell({
 				<div className="flex h-12 items-center px-4 sm:px-6">
 					<nav
 						aria-label="Primary"
-						className="flex flex-1 items-center gap-5 text-sm"
+						className="flex flex-1 items-center gap-2 text-sm"
 					>
 						<NavLink
 							to="/albums"
 							className={({ isActive }) =>
-								`border-b py-1 ${isActive ? "border-[#1c1c1a] text-[#1c1c1a]" : "border-transparent text-[#73716b] hover:text-[#1c1c1a]"}`
+								`border px-3 py-1.5 transition-colors ${isActive ? "border-[#c9c5bc] bg-[#fdfcf8] text-[#1c1c1a]" : "border-[#e6e3dc] text-[#73716b] hover:border-[#c9c5bc] hover:bg-[#efede7] hover:text-[#1c1c1a]"}`
 							}
 						>
 							Albums
@@ -65,7 +65,7 @@ export function AppShell({
 						<NavLink
 							to="/loved"
 							className={({ isActive }) =>
-								`border-b py-1 ${isActive ? "border-[#1c1c1a] text-[#1c1c1a]" : "border-transparent text-[#73716b] hover:text-[#1c1c1a]"}`
+								`border px-3 py-1.5 transition-colors ${isActive ? "border-[#c9c5bc] bg-[#fdfcf8] text-[#1c1c1a]" : "border-[#e6e3dc] text-[#73716b] hover:border-[#c9c5bc] hover:bg-[#efede7] hover:text-[#1c1c1a]"}`
 							}
 						>
 							Loved
