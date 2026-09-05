@@ -1,5 +1,6 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
+	type ReactNode,
 	type PointerEvent as ReactPointerEvent,
 	useCallback,
 	useEffect,
@@ -31,6 +32,71 @@ function formatDate(
 		.padStart(2, "0");
 	const minutes = (Math.abs(offset) % 60).toString().padStart(2, "0");
 	return `${formatted} (UTC${sign}${hours}:${minutes})`;
+}
+
+type ViewerIconName =
+	| "close"
+	| "download"
+	| "heart"
+	| "info"
+	| "minus"
+	| "next"
+	| "previous"
+	| "plus"
+	| "reset";
+
+function ViewerIcon({
+	name,
+	filled = false,
+}: {
+	name: ViewerIconName;
+	filled?: boolean;
+}) {
+	const paths: Record<ViewerIconName, ReactNode> = {
+		close: <path d="m6 6 12 12M18 6 6 18" />,
+		download: (
+			<>
+				<path d="M12 3v12m0 0 5-5m-5 5-5-5" />
+				<path d="M5 20h14" />
+			</>
+		),
+		heart: (
+			<path
+				d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.7-7.5 1.1-1.1a5.5 5.5 0 0 0 0-7.8Z"
+				fill={filled ? "currentColor" : "none"}
+			/>
+		),
+		info: (
+			<>
+				<circle cx="12" cy="12" r="9" />
+				<path d="M12 11v6m0-10h.01" />
+			</>
+		),
+		minus: <path d="M6 12h12" />,
+		next: <path d="m9 18 6-6-6-6" />,
+		previous: <path d="m15 18-6-6 6-6" />,
+		plus: <path d="M12 6v12M6 12h12" />,
+		reset: (
+			<>
+				<path d="M4 7v5h5" />
+				<path d="M5.5 16a8 8 0 1 0 .5-9l-2 2" />
+			</>
+		),
+	};
+	return (
+		<svg
+			aria-hidden="true"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.7"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			className="h-5 w-5"
+		>
+			{paths[name]}
+		</svg>
+	);
 }
 
 export function GalleryGrid({
@@ -75,8 +141,7 @@ export function GalleryGrid({
 	const virtualizer = useVirtualizer({
 		count: items.length,
 		getScrollElement: () => parentRef.current,
-		estimateSize: (index) =>
-			columnWidth / (items[index]?.aspectRatio ?? 1) + gap,
+		estimateSize: (index) => columnWidth / (items[index]?.aspectRatio ?? 1),
 		lanes,
 		gap,
 		overscan: lanes * 3,
@@ -208,7 +273,7 @@ export function GalleryGrid({
 									onClick={() =>
 										toggle.mutate({ id: item.id, loved: item.loved })
 									}
-									className={`absolute right-2 top-2 min-h-8 bg-black/70 px-2 text-sm ${item.loved ? "text-[#e66a71]" : "text-white"}`}
+									className={`absolute right-2 top-2 flex h-9 w-9 items-center justify-center bg-black/70 text-lg leading-none ${item.loved ? "text-[#e66a71]" : "text-white"}`}
 								>
 									{item.loved ? "♥" : "♡"}
 								</button>
@@ -389,41 +454,53 @@ function PhotoViewer({
 			className="fixed inset-0 z-50 flex bg-[#111] text-white"
 		>
 			<div
-				className={`absolute inset-x-0 top-0 z-20 flex items-center justify-between bg-black/65 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] text-sm transition-opacity ${controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
+				className={`absolute inset-x-0 top-0 z-20 flex items-center justify-between bg-gradient-to-b from-black/75 to-transparent px-4 pb-8 pt-[max(1rem,env(safe-area-inset-top))] transition-opacity ${controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
 			>
-				<button type="button" onClick={onClose} className="media-focus py-1">
-					Close
+				<button
+					type="button"
+					onClick={onClose}
+					aria-label="Close viewer"
+					title="Close"
+					className="media-focus flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/35 backdrop-blur-sm hover:bg-white/15"
+				>
+					<ViewerIcon name="close" />
 				</button>
-				<div className="flex items-center gap-5">
+				<div className="flex items-center gap-2">
 					{data ? (
 						<button
 							type="button"
 							onClick={() => toggle.mutate({ id: data.id, loved: data.loved })}
-							className={`media-focus py-1 ${data.loved ? "text-[#e66a71]" : ""}`}
+							aria-label={data.loved ? "Remove from Loved" : "Add to Loved"}
+							title={data.loved ? "Remove from Loved" : "Add to Loved"}
+							className={`media-focus flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/35 backdrop-blur-sm hover:bg-white/15 ${data.loved ? "text-[#e66a71]" : ""}`}
 						>
-							{data.loved ? "Loved" : "Love"}
+							<ViewerIcon name="heart" filled={data.loved} />
 						</button>
 					) : null}
 					<button
 						type="button"
 						onClick={() => setShowInfo((value) => !value)}
 						aria-expanded={showInfo}
-						className="media-focus py-1"
+						aria-label="Show photo information"
+						title="Photo information"
+						className={`media-focus flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/35 backdrop-blur-sm hover:bg-white/15 ${showInfo ? "bg-white/20" : ""}`}
 					>
-						Info
+						<ViewerIcon name="info" />
 					</button>
 					<button
 						type="button"
 						onClick={() => void download()}
 						disabled={!data}
-						className="media-focus py-1 disabled:opacity-40"
+						aria-label="Download original"
+						title="Download original"
+						className="media-focus flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/35 backdrop-blur-sm hover:bg-white/15 disabled:opacity-40"
 					>
-						Download
+						<ViewerIcon name="download" />
 					</button>
 				</div>
 			</div>
 			<div
-				className="flex min-w-0 flex-1 items-center justify-center overflow-hidden p-2 sm:p-4"
+				className="flex min-w-0 flex-1 items-center justify-center overflow-hidden px-2 pb-20 pt-16 sm:px-14"
 				onWheel={(event) => {
 					if (!isZoomable) return;
 					event.preventDefault();
@@ -470,7 +547,7 @@ function PhotoViewer({
 			</div>
 			{isZoomable ? (
 				<fieldset
-					className={`absolute bottom-24 left-1/2 z-30 flex -translate-x-1/2 items-center border border-white/15 bg-black/70 text-sm transition-opacity ${controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
+					className={`absolute bottom-24 right-4 z-30 flex items-center rounded-full border border-white/15 bg-black/55 p-1 text-sm backdrop-blur-sm transition-opacity ${controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
 				>
 					<legend className="sr-only">Image zoom controls</legend>
 					<button
@@ -478,26 +555,32 @@ function PhotoViewer({
 						onClick={() => changeZoom(-0.25)}
 						disabled={zoom <= 1}
 						aria-label="Zoom out"
-						className="media-focus min-h-10 min-w-10 text-lg disabled:opacity-35"
+						title="Zoom out"
+						className="media-focus flex h-9 w-9 items-center justify-center rounded-full hover:bg-white/15 disabled:opacity-35"
 					>
-						âˆ’
+						<ViewerIcon name="minus" />
 					</button>
+					<span className="min-w-12 text-center text-xs tabular-nums text-white/80">
+						{Math.round(zoom * 100)}%
+					</span>
 					<button
 						type="button"
 						onClick={resetZoom}
 						aria-label="Reset zoom"
-						className="media-focus min-h-10 min-w-16 border-x border-white/15 px-2 text-xs tabular-nums"
+						title="Reset zoom"
+						className="media-focus flex h-9 w-9 items-center justify-center rounded-full hover:bg-white/15"
 					>
-						{Math.round(zoom * 100)}%
+						<ViewerIcon name="reset" />
 					</button>
 					<button
 						type="button"
 						onClick={() => changeZoom(0.25)}
 						disabled={zoom >= 4}
 						aria-label="Zoom in"
-						className="media-focus min-h-10 min-w-10 text-lg disabled:opacity-35"
+						title="Zoom in"
+						className="media-focus flex h-9 w-9 items-center justify-center rounded-full hover:bg-white/15 disabled:opacity-35"
 					>
-						+
+						<ViewerIcon name="plus" />
 					</button>
 				</fieldset>
 			) : null}
@@ -507,9 +590,11 @@ function PhotoViewer({
 					onClick={() =>
 						navigate(`${basePath}/photo/${previous.id}`, { replace: true })
 					}
-					className={`media-focus absolute left-3 top-1/2 z-10 bg-black/65 px-3 py-2 text-sm transition-opacity ${controlsVisible ? "opacity-100" : "opacity-0"}`}
+					aria-label="Previous photo"
+					title="Previous photo"
+					className={`media-focus absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 backdrop-blur-sm transition-opacity hover:bg-black/70 ${controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
 				>
-					Previous
+					<ViewerIcon name="previous" />
 				</button>
 			) : null}
 			{next ? (
@@ -518,37 +603,44 @@ function PhotoViewer({
 					onClick={() =>
 						navigate(`${basePath}/photo/${next.id}`, { replace: true })
 					}
-					className={`media-focus absolute right-3 top-1/2 z-10 bg-black/65 px-3 py-2 text-sm transition-opacity ${controlsVisible ? "opacity-100" : "opacity-0"}`}
+					aria-label="Next photo"
+					title="Next photo"
+					className={`media-focus absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 backdrop-blur-sm transition-opacity hover:bg-black/70 ${controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
 				>
-					Next
+					<ViewerIcon name="next" />
 				</button>
 			) : null}
 			{data ? (
 				<div
-					className={`absolute inset-x-0 bottom-0 z-20 bg-black/65 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 text-center text-sm transition-opacity ${controlsVisible || showInfo ? "opacity-100" : "pointer-events-none opacity-0"}`}
+					className={`absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-6 bg-gradient-to-t from-black/80 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-10 text-sm transition-opacity sm:px-6 ${controlsVisible || showInfo ? "opacity-100" : "pointer-events-none opacity-0"}`}
 				>
-					<p className="truncate">
-						{data.fileName} · {formatDate(data)}
-					</p>
-					<div className="mt-1 flex items-center justify-center gap-2 text-xs text-white/70">
-						{data.uploader.avatarUrl ? (
-							<img
-								src={data.uploader.avatarUrl}
-								alt=""
-								referrerPolicy="no-referrer"
-								className="h-5 w-5 rounded-full"
-							/>
-						) : null}
-						<span>{data.uploader.displayName}</span>
-					</div>
-					{showInfo ? (
-						<p className="mt-2 text-xs text-white/55">
-							{data.width && data.height
-								? `${data.width} × ${data.height}`
-								: "Dimensions unavailable"}{" "}
-							· {data.mediaType === "VIDEO" ? "Video" : "Image"}
+					<div className="min-w-0 max-w-[52%] text-left">
+						<p className="truncate font-medium">{data.fileName}</p>
+						<p className="mt-1 truncate text-xs text-white/65">
+							{formatDate(data)}
 						</p>
-					) : null}
+					</div>
+					<div className="min-w-0 max-w-[44%] text-right">
+						<div className="flex items-center justify-end gap-2 text-xs text-white/70">
+							<span className="truncate">{data.uploader.displayName}</span>
+							{data.uploader.avatarUrl ? (
+								<img
+									src={data.uploader.avatarUrl}
+									alt=""
+									referrerPolicy="no-referrer"
+									className="h-6 w-6 shrink-0 rounded-full"
+								/>
+							) : null}
+						</div>
+						{showInfo ? (
+							<p className="mt-2 truncate text-xs text-white/55">
+								{data.width && data.height
+									? `${data.width} × ${data.height}`
+									: "Dimensions unavailable"}{" "}
+								· {data.mediaType === "VIDEO" ? "Video" : "Image"}
+							</p>
+						) : null}
+					</div>
 				</div>
 			) : null}
 		</div>
