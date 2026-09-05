@@ -12,6 +12,11 @@ function formatUpdated(value: string | undefined): string {
 	return `Updated ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(value))}`;
 }
 
+function eventIsoValue(value: FormDataEntryValue | null): string | null {
+	const raw = String(value ?? "");
+	return raw ? new Date(raw).toISOString() : null;
+}
+
 export function AlbumsPage() {
 	const [archived, setArchived] = useState(false);
 	const [creating, setCreating] = useState(false);
@@ -19,7 +24,11 @@ export function AlbumsPage() {
 	const me = useMe();
 	const client = useQueryClient();
 	const create = useMutation({
-		mutationFn: (body: { name: string; description: string | null }) =>
+		mutationFn: (body: {
+			name: string;
+			description: string | null;
+			eventAt: string | null;
+		}) =>
 			apiFetch<Collection>("/v1/collections", {
 				method: "POST",
 				body: JSON.stringify(body),
@@ -82,6 +91,7 @@ export function AlbumsPage() {
 							create.mutate({
 								name: String(form.get("name")),
 								description: String(form.get("description")) || null,
+								eventAt: eventIsoValue(form.get("eventAt")),
 							});
 						}}
 					>
@@ -111,6 +121,18 @@ export function AlbumsPage() {
 							maxLength={2000}
 							rows={3}
 							className="mt-2 w-full resize-y rounded-[4px] border border-[#d8d4cb] bg-[#fdfcf8] px-3 py-2.5"
+						/>
+						<label
+							className="mt-4 block text-xs text-[#73716b]"
+							htmlFor="album-event-at"
+						>
+							Event time <span>(optional)</span>
+						</label>
+						<input
+							id="album-event-at"
+							name="eventAt"
+							type="datetime-local"
+							className="mt-2 rounded-[4px] border border-[#d8d4cb] bg-[#fdfcf8] px-3 py-2.5"
 						/>
 						{create.isError ? (
 							<p role="alert" className="mt-3 text-sm text-[#a53e45]">
@@ -201,6 +223,14 @@ export function AlbumsPage() {
 									{album.description ||
 										`${album.photoCount} ${album.photoCount === 1 ? "photo" : "photos"}`}
 								</p>
+								{album.eventAt ? (
+									<p className="mt-2 text-xs text-[#73716b]">
+										{new Intl.DateTimeFormat(undefined, {
+											dateStyle: "medium",
+											timeStyle: "short",
+										}).format(new Date(album.eventAt))}
+									</p>
+								) : null}
 								<p className="mt-3 text-xs text-[#918e87]">
 									{album.createdByUserId === me.data?.id
 										? "Created by you"

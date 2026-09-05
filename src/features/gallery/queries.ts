@@ -5,7 +5,12 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { apiFetch, apiFetchEnvelope } from "../../lib/api";
-import type { Collection, GalleryItem, PhotoDetail } from "./types";
+import type {
+	Collection,
+	GalleryItem,
+	GalleryOptions,
+	PhotoDetail,
+} from "./types";
 
 interface GalleryInfiniteData {
 	pages: Array<{
@@ -19,7 +24,10 @@ export const collectionKeys = {
 	all: ["collections"] as const,
 	list: (state: "active" | "archived") => ["collections", { state }] as const,
 	detail: (id: string) => ["collection", id] as const,
-	photos: (id: string) => ["collection", id, "photos"] as const,
+	photos: (id: string, options?: GalleryOptions) =>
+		options
+			? (["collection", id, "photos", options] as const)
+			: (["collection", id, "photos"] as const),
 };
 
 export function useCollections(state: "active" | "archived" = "active") {
@@ -42,13 +50,13 @@ export function useCollection(id: string) {
 	});
 }
 
-export function useGallery(collectionId: string) {
+export function useGallery(collectionId: string, options: GalleryOptions) {
 	return useInfiniteQuery({
-		queryKey: collectionKeys.photos(collectionId),
+		queryKey: collectionKeys.photos(collectionId, options),
 		initialPageParam: "",
 		queryFn: ({ pageParam }) =>
 			apiFetchEnvelope<GalleryItem[]>(
-				`/v1/collections/${collectionId}/photos?limit=40${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ""}`,
+				`/v1/collections/${collectionId}/photos?limit=40&sort=${options.sort}&media=${options.media}&groupBy=${options.groupBy}${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ""}`,
 			),
 		getNextPageParam: (last) => last.page.nextCursor ?? undefined,
 		refetchInterval: (query) =>
@@ -141,8 +149,8 @@ export function useRemoveFromCollection(collectionId: string) {
 			}),
 		onMutate: async (photoId) => {
 			await client.cancelQueries({ queryKey });
-			const previous = client.getQueryData<GalleryInfiniteData>(queryKey);
-			client.setQueryData<GalleryInfiniteData>(queryKey, (current) =>
+			const previous = client.getQueriesData<GalleryInfiniteData>({ queryKey });
+			client.setQueriesData<GalleryInfiniteData>({ queryKey }, (current) =>
 				current
 					? {
 							...current,
@@ -156,7 +164,8 @@ export function useRemoveFromCollection(collectionId: string) {
 			return { previous };
 		},
 		onError: (_error, _photoId, context) => {
-			if (context?.previous) client.setQueryData(queryKey, context.previous);
+			for (const [previousKey, previousData] of context?.previous ?? [])
+				client.setQueryData(previousKey, previousData);
 		},
 		onSettled: () => {
 			void client.invalidateQueries({

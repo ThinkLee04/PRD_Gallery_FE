@@ -113,6 +113,7 @@ export function GalleryGrid({
 	basePath,
 	photoId,
 	onRemove,
+	groupByUploader = false,
 }: {
 	items: GalleryItem[];
 	hasMore: boolean;
@@ -120,6 +121,7 @@ export function GalleryGrid({
 	basePath: string;
 	photoId?: string;
 	onRemove?: (photoId: string) => void;
+	groupByUploader?: boolean;
 }) {
 	const parentRef = useRef<HTMLDivElement>(null);
 	const [width, setWidth] = useState(1000);
@@ -243,7 +245,7 @@ export function GalleryGrid({
 									</button>
 								) : null}
 								<div
-									className={`pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-12 text-white transition-opacity duration-300 ${showInfo ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"}`}
+									className={`pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-12 text-white transition-opacity duration-300 ${groupByUploader || showInfo ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"}`}
 								>
 									<p className="truncate text-sm font-medium">
 										{item.fileName}
