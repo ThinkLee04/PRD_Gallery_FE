@@ -133,6 +133,9 @@ export function useUploadFiles(
 			void client.invalidateQueries({
 				queryKey: collectionKeys.detail(collectionId),
 			});
+			void client.invalidateQueries({
+				queryKey: collectionKeys.uploaders(collectionId),
+			});
 		},
 	});
 }

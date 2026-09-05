@@ -12,9 +12,9 @@ function formatUpdated(value: string | undefined): string {
 	return `Updated ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(value))}`;
 }
 
-function eventIsoValue(value: FormDataEntryValue | null): string | null {
+function eventDateValue(value: FormDataEntryValue | null): string | null {
 	const raw = String(value ?? "");
-	return raw ? new Date(raw).toISOString() : null;
+	return raw || null;
 }
 
 export function AlbumsPage() {
@@ -27,7 +27,7 @@ export function AlbumsPage() {
 		mutationFn: (body: {
 			name: string;
 			description: string | null;
-			eventAt: string | null;
+			eventDate: string | null;
 		}) =>
 			apiFetch<Collection>("/v1/collections", {
 				method: "POST",
@@ -91,7 +91,7 @@ export function AlbumsPage() {
 							create.mutate({
 								name: String(form.get("name")),
 								description: String(form.get("description")) || null,
-								eventAt: eventIsoValue(form.get("eventAt")),
+								eventDate: eventDateValue(form.get("eventDate")),
 							});
 						}}
 					>
@@ -124,14 +124,14 @@ export function AlbumsPage() {
 						/>
 						<label
 							className="mt-4 block text-xs text-[#73716b]"
-							htmlFor="album-event-at"
+							htmlFor="album-event-date"
 						>
-							Event time <span>(optional)</span>
+							Event date <span>(optional)</span>
 						</label>
 						<input
-							id="album-event-at"
-							name="eventAt"
-							type="datetime-local"
+							id="album-event-date"
+							name="eventDate"
+							type="date"
 							className="mt-2 rounded-[4px] border border-[#d8d4cb] bg-[#fdfcf8] px-3 py-2.5"
 						/>
 						{create.isError ? (
@@ -223,12 +223,12 @@ export function AlbumsPage() {
 									{album.description ||
 										`${album.photoCount} ${album.photoCount === 1 ? "photo" : "photos"}`}
 								</p>
-								{album.eventAt ? (
+								{album.eventDate ? (
 									<p className="mt-2 text-xs text-[#73716b]">
 										{new Intl.DateTimeFormat(undefined, {
 											dateStyle: "medium",
-											timeStyle: "short",
-										}).format(new Date(album.eventAt))}
+											timeZone: "UTC",
+										}).format(new Date(`${album.eventDate}T00:00:00Z`))}
 									</p>
 								) : null}
 								<p className="mt-3 text-xs text-[#918e87]">

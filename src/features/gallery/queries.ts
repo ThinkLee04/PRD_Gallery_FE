@@ -7,6 +7,7 @@ import {
 import { apiFetch, apiFetchEnvelope } from "../../lib/api";
 import type {
 	Collection,
+	CollectionUploader,
 	GalleryItem,
 	GalleryOptions,
 	PhotoDetail,
@@ -24,6 +25,7 @@ export const collectionKeys = {
 	all: ["collections"] as const,
 	list: (state: "active" | "archived") => ["collections", { state }] as const,
 	detail: (id: string) => ["collection", id] as const,
+	uploaders: (id: string) => ["collection", id, "uploaders"] as const,
 	photos: (id: string, options?: GalleryOptions) =>
 		options
 			? (["collection", id, "photos", options] as const)
@@ -42,6 +44,15 @@ export function useCollections(state: "active" | "archived" = "active") {
 	});
 }
 
+export function useCollectionUploaders(id: string) {
+	return useQuery({
+		queryKey: collectionKeys.uploaders(id),
+		queryFn: () =>
+			apiFetch<CollectionUploader[]>(`/v1/collections/${id}/uploaders`),
+		enabled: id !== "",
+	});
+}
+
 export function useCollection(id: string) {
 	return useQuery({
 		queryKey: collectionKeys.detail(id),
@@ -56,7 +67,7 @@ export function useGallery(collectionId: string, options: GalleryOptions) {
 		initialPageParam: "",
 		queryFn: ({ pageParam }) =>
 			apiFetchEnvelope<GalleryItem[]>(
-				`/v1/collections/${collectionId}/photos?limit=40&sort=${options.sort}&media=${options.media}&groupBy=${options.groupBy}${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ""}`,
+				`/v1/collections/${collectionId}/photos?limit=40&sort=${options.sort}&media=${options.media}${options.uploaderId ? `&uploaderId=${encodeURIComponent(options.uploaderId)}` : ""}${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ""}`,
 			),
 		getNextPageParam: (last) => last.page.nextCursor ?? undefined,
 		refetchInterval: (query) =>
@@ -173,6 +184,9 @@ export function useRemoveFromCollection(collectionId: string) {
 			});
 			void client.invalidateQueries({
 				queryKey: collectionKeys.detail(collectionId),
+			});
+			void client.invalidateQueries({
+				queryKey: collectionKeys.uploaders(collectionId),
 			});
 		},
 	});
