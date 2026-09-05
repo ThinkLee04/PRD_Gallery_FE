@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useMatch, useNavigate, useParams } from "react-router-dom";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { ApiError, apiFetch } from "../../lib/api";
 import { AppShell } from "./AppShell";
 import { GalleryGrid } from "./GalleryGrid";
@@ -34,6 +35,9 @@ export function CollectionGalleryPage() {
 	const [progress, setProgress] = useState<Record<string, number>>({});
 	const [uploadPopupOpen, setUploadPopupOpen] = useState(false);
 	const [editing, setEditing] = useState(false);
+	const [confirmation, setConfirmation] = useState<
+		{ action: "archive" } | { action: "remove"; photoId: string } | null
+	>(null);
 	const fileInput = useRef<HTMLInputElement>(null);
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
@@ -59,6 +63,7 @@ export function CollectionGalleryPage() {
 		mutationFn: () =>
 			apiFetch(`/v1/collections/${collectionId}/archive`, { method: "POST" }),
 		onSuccess: () => {
+			setConfirmation(null);
 			void queryClient.invalidateQueries({ queryKey: collectionKeys.all });
 			navigate("/albums");
 		},
@@ -261,13 +266,10 @@ export function CollectionGalleryPage() {
 						</button>
 						<button
 							type="button"
-							onClick={() => {
-								if (
-									window.confirm(
-										"Archive this album? Its photos will remain in the vault.",
-									)
-								)
-									archive.mutate();
+							onClick={(event) => {
+								archive.reset();
+								setConfirmation({ action: "archive" });
+								event.currentTarget.closest("details")?.removeAttribute("open");
 							}}
 							className="block w-full px-2 py-2 text-left text-[#a53e45] hover:bg-[#efede7]"
 						>
@@ -419,16 +421,6 @@ export function CollectionGalleryPage() {
 							: "Upload failed."}
 					</p>
 				) : null}
-				{remove.isError ? (
-					<p
-						role="alert"
-						className="mx-4 mb-4 border-l-2 border-[#c84d54] pl-3 text-sm text-[#a53e45] sm:mx-6"
-					>
-						{remove.error instanceof Error
-							? remove.error.message
-							: "Unable to remove this photo from the album."}
-					</p>
-				) : null}
 				{gallery.isError &&
 				!(
 					gallery.error instanceof ApiError && gallery.error.code === "CONFLICT"
@@ -446,12 +438,8 @@ export function CollectionGalleryPage() {
 					onRemove={
 						collection.data?.canManage
 							? (id) => {
-									if (
-										window.confirm(
-											"Remove this photo from the album? The original remains in the vault.",
-										)
-									)
-										remove.mutate(id);
+									remove.reset();
+									setConfirmation({ action: "remove", photoId: id });
 								}
 							: undefined
 					}
@@ -488,6 +476,50 @@ export function CollectionGalleryPage() {
 						isPending={upload.isPending}
 						error={upload.isError ? upload.error : null}
 						onClose={() => setUploadPopupOpen(false)}
+					/>
+				) : null}
+				{confirmation ? (
+					<ConfirmDialog
+						title={
+							confirmation.action === "archive"
+								? "Archive this album?"
+								: "Remove photo from album?"
+						}
+						description={
+							confirmation.action === "archive"
+								? "The album will leave your active albums. Its photos and original files will stay safely in the vault."
+								: "This photo will only be removed from this album. Its original file will stay safely in the vault."
+						}
+						confirmLabel={
+							confirmation.action === "archive"
+								? "Archive album"
+								: "Remove photo"
+						}
+						tone="danger"
+						isPending={
+							confirmation.action === "archive"
+								? archive.isPending
+								: remove.isPending
+						}
+						error={
+							confirmation.action === "archive" && archive.isError
+								? archive.error.message
+								: confirmation.action === "remove" && remove.isError
+									? remove.error.message
+									: null
+						}
+						onCancel={() => {
+							archive.reset();
+							remove.reset();
+							setConfirmation(null);
+						}}
+						onConfirm={() => {
+							if (confirmation.action === "archive") archive.mutate();
+							else
+								remove.mutate(confirmation.photoId, {
+									onSuccess: () => setConfirmation(null),
+								});
+						}}
 					/>
 				) : null}
 			</main>

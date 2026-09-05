@@ -3,7 +3,9 @@ import {
 	useMutation,
 	useQueryClient,
 } from "@tanstack/react-query";
+import { useState } from "react";
 import { Navigate } from "react-router-dom";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { apiFetch, apiFetchEnvelope } from "../../lib/api";
 import { useMe } from "../auth/useMe";
 import { AppShell } from "../gallery/AppShell";
@@ -36,6 +38,7 @@ function Avatar({ url, name }: { url: string | null; name: string }) {
 
 export function AdminAccessPage() {
 	const me = useMe();
+	const [userToApprove, setUserToApprove] = useState<PendingUser | null>(null);
 	const client = useQueryClient();
 	const users = useInfiniteQuery({
 		queryKey: ["admin", "pending-users"],
@@ -51,6 +54,7 @@ export function AdminAccessPage() {
 		mutationFn: (id: string) =>
 			apiFetch(`/v1/admin/users/${id}/approve`, { method: "POST" }),
 		onSuccess: () => {
+			setUserToApprove(null);
 			void client.invalidateQueries({ queryKey: ["admin", "pending-users"] });
 		},
 	});
@@ -106,12 +110,8 @@ export function AdminAccessPage() {
 									type="button"
 									disabled={approve.isPending}
 									onClick={() => {
-										if (
-											window.confirm(
-												`Approve ${user.displayName || user.email} as a vault member?`,
-											)
-										)
-											approve.mutate(user.id);
+										approve.reset();
+										setUserToApprove(user);
 									}}
 									className="border-b border-[#1c1c1a] py-1 text-sm font-medium disabled:opacity-50"
 								>
@@ -170,6 +170,27 @@ export function AdminAccessPage() {
 						Member management beyond approval is not available yet.
 					</p>
 				</section>
+				{userToApprove ? (
+					<ConfirmDialog
+						title="Approve vault access?"
+						description={
+							<>
+								<span className="font-medium text-[#34332f]">
+									{userToApprove.displayName || userToApprove.email}
+								</span>{" "}
+								will become a member and can access shared albums in this vault.
+							</>
+						}
+						confirmLabel="Approve access"
+						isPending={approve.isPending}
+						error={approve.isError ? approve.error.message : null}
+						onCancel={() => {
+							approve.reset();
+							setUserToApprove(null);
+						}}
+						onConfirm={() => approve.mutate(userToApprove.id)}
+					/>
+				) : null}
 			</main>
 		</AppShell>
 	);
