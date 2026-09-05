@@ -2,6 +2,7 @@ export interface Collection {
 	id: string;
 	name: string;
 	description: string | null;
+	eventAt: string | null;
 	createdByUserId: string;
 	createdAt: string;
 	updatedAt?: string;
@@ -11,6 +12,12 @@ export interface Collection {
 	creatorName?: string;
 	creatorAvatarUrl?: string | null;
 	cover?: MediaAsset | null;
+}
+
+export interface GalleryOptions {
+	sort: "captured_at" | "uploaded_at" | "position";
+	media: "all" | "image" | "video";
+	groupBy: "none" | "uploader";
 }
 
 export interface MediaAsset {

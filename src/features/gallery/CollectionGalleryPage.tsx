@@ -10,14 +10,33 @@ import {
 	useGallery,
 	useRemoveFromCollection,
 } from "./queries";
+import type { GalleryOptions } from "./types";
 import { useUploadFiles } from "./uploads";
+
+function eventInputValue(value: string | null): string {
+	if (!value) return "";
+	const date = new Date(value);
+	return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+		.toISOString()
+		.slice(0, 16);
+}
+
+function eventIsoValue(value: FormDataEntryValue | null): string | null {
+	const raw = String(value ?? "");
+	return raw ? new Date(raw).toISOString() : null;
+}
 
 export function CollectionGalleryPage() {
 	const { collectionId = "" } = useParams();
 	const photoId = useMatch("/albums/:collectionId/photo/:photoId")?.params
 		.photoId;
+	const [galleryOptions, setGalleryOptions] = useState<GalleryOptions>({
+		sort: "captured_at",
+		media: "all",
+		groupBy: "none",
+	});
 	const collection = useCollection(collectionId);
-	const gallery = useGallery(collectionId);
+	const gallery = useGallery(collectionId, galleryOptions);
 	const [progress, setProgress] = useState<Record<string, number>>({});
 	const [uploadPopupOpen, setUploadPopupOpen] = useState(false);
 	const [editing, setEditing] = useState(false);
@@ -25,7 +44,11 @@ export function CollectionGalleryPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const edit = useMutation({
-		mutationFn: (body: { name: string; description: string | null }) =>
+		mutationFn: (body: {
+			name: string;
+			description: string | null;
+			eventAt: string | null;
+		}) =>
 			apiFetch(`/v1/collections/${collectionId}`, {
 				method: "PATCH",
 				body: JSON.stringify(body),
@@ -69,36 +92,117 @@ export function CollectionGalleryPage() {
 			upload.mutate(selected);
 		}
 	};
-	const albumActions = collection.data?.canManage ? (
-		<details className="relative">
-			<summary className="cursor-pointer list-none border-b border-transparent py-1 text-[#53514c] hover:border-[#53514c]">
-				More
-			</summary>
-			<div className="absolute right-0 z-50 mt-3 w-44 border border-[#d8d4cb] bg-[#fdfcf8] p-2">
-				<button
-					type="button"
-					onClick={() => setEditing(true)}
-					className="block w-full px-2 py-2 text-left hover:bg-[#efede7]"
-				>
-					Edit details
-				</button>
-				<button
-					type="button"
-					onClick={() => {
-						if (
-							window.confirm(
-								"Archive this album? Its photos will remain in the vault.",
-							)
-						)
-							archive.mutate();
-					}}
-					className="block w-full px-2 py-2 text-left text-[#a53e45] hover:bg-[#efede7]"
-				>
-					Archive album
-				</button>
-			</div>
-		</details>
-	) : undefined;
+	const sortLabel =
+		galleryOptions.sort === "captured_at"
+			? "Captured"
+			: galleryOptions.sort === "uploaded_at"
+				? "Uploaded"
+				: "Album order";
+	const mediaLabel =
+		galleryOptions.media === "all"
+			? "All media"
+			: galleryOptions.media === "image"
+				? "Photos"
+				: "Videos";
+	const albumActions = (
+		<div className="flex items-center gap-3">
+			<details className="relative">
+				<summary className="cursor-pointer list-none whitespace-nowrap border-b border-transparent py-1 text-[#53514c] hover:border-[#53514c]">
+					{sortLabel}
+				</summary>
+				<div className="absolute right-0 z-50 mt-3 w-44 border border-[#d8d4cb] bg-[#fdfcf8] p-2">
+					{(
+						[
+							["captured_at", "Captured time"],
+							["uploaded_at", "Uploaded time"],
+							["position", "Album order"],
+						] as const
+					).map(([value, label]) => (
+						<button
+							key={value}
+							type="button"
+							onClick={(event) => {
+								setGalleryOptions((current) => ({ ...current, sort: value }));
+								event.currentTarget.closest("details")?.removeAttribute("open");
+							}}
+							className={`block w-full px-2 py-2 text-left hover:bg-[#efede7] ${galleryOptions.sort === value ? "font-medium" : ""}`}
+						>
+							{label}
+						</button>
+					))}
+				</div>
+			</details>
+			<button
+				type="button"
+				onClick={() =>
+					setGalleryOptions((current) => ({
+						...current,
+						groupBy: current.groupBy === "uploader" ? "none" : "uploader",
+					}))
+				}
+				className={`whitespace-nowrap border-b py-1 ${galleryOptions.groupBy === "uploader" ? "border-[#1c1c1a] font-medium" : "border-transparent text-[#53514c] hover:border-[#53514c]"}`}
+				aria-pressed={galleryOptions.groupBy === "uploader"}
+			>
+				Group by uploader
+			</button>
+			<details className="relative">
+				<summary className="cursor-pointer list-none whitespace-nowrap border-b border-transparent py-1 text-[#53514c] hover:border-[#53514c]">
+					{mediaLabel}
+				</summary>
+				<div className="absolute right-0 z-50 mt-3 w-40 border border-[#d8d4cb] bg-[#fdfcf8] p-2">
+					{(
+						[
+							["all", "Photos & videos"],
+							["image", "Photos only"],
+							["video", "Videos only"],
+						] as const
+					).map(([value, label]) => (
+						<button
+							key={value}
+							type="button"
+							onClick={(event) => {
+								setGalleryOptions((current) => ({ ...current, media: value }));
+								event.currentTarget.closest("details")?.removeAttribute("open");
+							}}
+							className={`block w-full px-2 py-2 text-left hover:bg-[#efede7] ${galleryOptions.media === value ? "font-medium" : ""}`}
+						>
+							{label}
+						</button>
+					))}
+				</div>
+			</details>
+			{collection.data?.canManage ? (
+				<details className="relative">
+					<summary className="cursor-pointer list-none border-b border-transparent py-1 text-[#53514c] hover:border-[#53514c]">
+						More
+					</summary>
+					<div className="absolute right-0 z-50 mt-3 w-44 border border-[#d8d4cb] bg-[#fdfcf8] p-2">
+						<button
+							type="button"
+							onClick={() => setEditing(true)}
+							className="block w-full px-2 py-2 text-left hover:bg-[#efede7]"
+						>
+							Edit details
+						</button>
+						<button
+							type="button"
+							onClick={() => {
+								if (
+									window.confirm(
+										"Archive this album? Its photos will remain in the vault.",
+									)
+								)
+									archive.mutate();
+							}}
+							className="block w-full px-2 py-2 text-left text-[#a53e45] hover:bg-[#efede7]"
+						>
+							Archive album
+						</button>
+					</div>
+				</details>
+			) : null}
+		</div>
+	);
 
 	return (
 		<AppShell
@@ -110,14 +214,22 @@ export function CollectionGalleryPage() {
 			actions={albumActions}
 		>
 			<main>
-				<header className="px-4 py-5 sm:px-6">
+				<header className="px-4 py-3 sm:px-6">
 					<div className="min-w-0">
-						<h1 className="truncate text-lg font-medium tracking-tight">
+						<h1 className="truncate text-base font-medium tracking-tight">
 							{collection.data?.name ?? "Loading…"}
 						</h1>
 						{collection.data?.description ? (
 							<p className="mt-1 max-w-2xl text-sm leading-6 text-[#73716b]">
 								{collection.data.description}
+							</p>
+						) : null}
+						{collection.data?.eventAt ? (
+							<p className="mt-1 text-xs text-[#918e87]">
+								{new Intl.DateTimeFormat(undefined, {
+									dateStyle: "long",
+									timeStyle: "short",
+								}).format(new Date(collection.data.eventAt))}
 							</p>
 						) : null}
 					</div>
@@ -143,6 +255,7 @@ export function CollectionGalleryPage() {
 							edit.mutate({
 								name: String(form.get("name")),
 								description: String(form.get("description")) || null,
+								eventAt: eventIsoValue(form.get("eventAt")),
 							});
 						}}
 					>
@@ -173,6 +286,19 @@ export function CollectionGalleryPage() {
 							rows={3}
 							defaultValue={collection.data.description ?? ""}
 							className="mt-2 w-full rounded-[4px] border border-[#d8d4cb] bg-[#fdfcf8] px-3 py-2"
+						/>
+						<label
+							htmlFor="edit-album-event-at"
+							className="mt-4 block text-xs text-[#73716b]"
+						>
+							Event time
+						</label>
+						<input
+							id="edit-album-event-at"
+							name="eventAt"
+							type="datetime-local"
+							defaultValue={eventInputValue(collection.data.eventAt)}
+							className="mt-2 rounded-[4px] border border-[#d8d4cb] bg-[#fdfcf8] px-3 py-2"
 						/>
 						{edit.isError ? (
 							<p role="alert" className="mt-3 text-sm text-[#a53e45]">
@@ -242,6 +368,7 @@ export function CollectionGalleryPage() {
 					loadMore={loadMore}
 					basePath={`/albums/${collectionId}`}
 					photoId={photoId}
+					groupByUploader={galleryOptions.groupBy === "uploader"}
 					onRemove={
 						collection.data?.canManage
 							? (id) => {

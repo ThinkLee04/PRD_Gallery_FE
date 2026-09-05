@@ -36,10 +36,10 @@ export function AppShell({
 	return (
 		<div className="min-h-screen bg-[#f7f6f2] text-[#1c1c1a]">
 			<header className="sticky top-0 z-40 border-b border-[#e6e3dc] bg-[#f7f6f2]/95">
-				<div className="flex h-14 items-center px-4 sm:px-6">
+				<div className="flex h-12 items-center px-4 sm:px-6">
 					<nav
 						aria-label="Primary"
-						className="flex flex-1 items-center gap-6 text-sm"
+						className="flex flex-1 items-center gap-5 text-sm"
 					>
 						<NavLink
 							to="/albums"
@@ -58,17 +58,19 @@ export function AppShell({
 							Loved
 						</NavLink>
 					</nav>
-					{onUpload ? (
-						<button
-							type="button"
-							onClick={onUpload}
-							className="mr-5 border-b border-[#1c1c1a] py-1 text-sm font-medium"
-						>
-							Upload
-						</button>
-					) : null}
-					{actions ? (
-						<div className="mr-5 flex items-center text-sm">{actions}</div>
+					{onUpload || actions ? (
+						<div className="mr-5 hidden items-center gap-4 text-xs sm:flex">
+							{onUpload ? (
+								<button
+									type="button"
+									onClick={onUpload}
+									className="border-b border-[#1c1c1a] py-1 font-medium"
+								>
+									Upload
+								</button>
+							) : null}
+							{actions}
+						</div>
 					) : null}
 					<details className="group relative">
 						<summary className="flex cursor-pointer list-none items-center gap-2 text-sm text-[#53514c] marker:hidden">
@@ -77,10 +79,10 @@ export function AppShell({
 									src={me.data.avatarUrl}
 									alt=""
 									referrerPolicy="no-referrer"
-									className="h-7 w-7 rounded-full"
+									className="h-6 w-6 rounded-full"
 								/>
 							) : (
-								<span className="h-7 w-7 rounded-full bg-[#ddd9d0]" />
+								<span className="h-6 w-6 rounded-full bg-[#ddd9d0]" />
 							)}
 							<span className="hidden sm:inline">{firstName}</span>
 						</summary>
@@ -125,6 +127,20 @@ export function AppShell({
 						</div>
 					</details>
 				</div>
+				{onUpload || actions ? (
+					<div className="flex h-10 items-center justify-start gap-4 overflow-x-auto border-t border-[#ece9e2] px-4 text-xs sm:hidden">
+						{onUpload ? (
+							<button
+								type="button"
+								onClick={onUpload}
+								className="border-b border-[#1c1c1a] py-1 font-medium"
+							>
+								Upload
+							</button>
+						) : null}
+						{actions}
+					</div>
+				) : null}
 			</header>
 			{children}
 		</div>
