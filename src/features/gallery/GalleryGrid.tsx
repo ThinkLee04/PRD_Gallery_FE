@@ -423,7 +423,7 @@ function PhotoViewer({
 				</div>
 			</div>
 			<div
-				className="flex min-w-0 flex-1 items-center justify-center overflow-hidden px-2 pb-20 pt-16 sm:px-14"
+				className="flex min-w-0 flex-1 items-center justify-center overflow-hidden p-2 sm:p-4"
 				onWheel={(event) => {
 					if (!isZoomable) return;
 					event.preventDefault();
