@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "../../lib/api";
+import { ApiError, apiFetch } from "../../lib/api";
 import { collectionKeys } from "./queries";
 
 interface UploadTicket {
@@ -52,6 +52,41 @@ function putFile(
 	});
 }
 
+const wait = (milliseconds: number) =>
+	new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+
+async function requestUploadTicket(
+	collectionId: string,
+	file: File,
+): Promise<UploadTicket> {
+	for (let attempt = 0; ; attempt++) {
+		try {
+			return await apiFetch<UploadTicket>(
+				`/v1/collections/${collectionId}/uploads`,
+				{
+					method: "POST",
+					body: JSON.stringify({
+						fileName: file.name,
+						byteSize: file.size,
+						contentType: contentTypeForFile(file),
+						...(file.lastModified > 0
+							? { lastModifiedAt: file.lastModified }
+							: {}),
+					}),
+				},
+			);
+		} catch (error) {
+			if (
+				!(error instanceof ApiError) ||
+				error.code !== "RATE_LIMITED" ||
+				attempt >= 5
+			)
+				throw error;
+			await wait(Math.min(30_000, 2_000 * 2 ** attempt));
+		}
+	}
+}
+
 export function useUploadFiles(
 	collectionId: string,
 	onProgress: (name: string, progress: number) => void,
@@ -60,33 +95,36 @@ export function useUploadFiles(
 	return useMutation({
 		mutationFn: async (files: File[]) => {
 			let next = 0;
+			const failures: Array<{ name: string; error: unknown }> = [];
 			const worker = async () => {
 				while (next < files.length) {
 					const file = files[next++];
 					if (file === undefined) continue;
-					const ticket = await apiFetch<UploadTicket>(
-						`/v1/collections/${collectionId}/uploads`,
-						{
+					try {
+						const ticket = await requestUploadTicket(collectionId, file);
+						await putFile(ticket, file, (progress) =>
+							onProgress(file.name, progress),
+						);
+						await apiFetch(`/v1/photos/${ticket.photoId}/upload-complete`, {
 							method: "POST",
-							body: JSON.stringify({
-								fileName: file.name,
-								byteSize: file.size,
-								contentType: contentTypeForFile(file),
-							}),
-						},
-					);
-					await putFile(ticket, file, (progress) =>
-						onProgress(file.name, progress),
-					);
-					await apiFetch(`/v1/photos/${ticket.photoId}/upload-complete`, {
-						method: "POST",
-					});
-					onProgress(file.name, 1);
+						});
+						onProgress(file.name, 1);
+					} catch (error) {
+						failures.push({ name: file.name, error });
+					}
 				}
 			};
 			await Promise.all(
 				Array.from({ length: Math.min(3, files.length) }, worker),
 			);
+			if (failures.length > 0) {
+				const first = failures[0];
+				const reason =
+					first?.error instanceof Error ? first.error.message : "Unknown error";
+				throw new Error(
+					`${failures.length} of ${files.length} uploads failed. ${first?.name ?? "File"}: ${reason}`,
+				);
+			}
 		},
 		onSettled: () => {
 			void client.invalidateQueries({
