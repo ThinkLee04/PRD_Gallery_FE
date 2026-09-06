@@ -114,6 +114,7 @@ export function GalleryGrid({
 	basePath,
 	photoId,
 	onRemove,
+	onScrollPositionChange,
 }: {
 	items: GalleryItem[];
 	hasMore: boolean;
@@ -121,6 +122,7 @@ export function GalleryGrid({
 	basePath: string;
 	photoId?: string;
 	onRemove?: (photoId: string) => void;
+	onScrollPositionChange?: (scrollTop: number) => void;
 }) {
 	const parentRef = useRef<HTMLDivElement>(null);
 	const [width, setWidth] = useState(1000);
@@ -182,6 +184,9 @@ export function GalleryGrid({
 				ref={parentRef}
 				className="h-[calc(100dvh-7rem)] overflow-y-auto px-1"
 				aria-label="Photo gallery"
+				onScroll={(event) =>
+					onScrollPositionChange?.(event.currentTarget.scrollTop)
+				}
 			>
 				<div
 					className="relative"
