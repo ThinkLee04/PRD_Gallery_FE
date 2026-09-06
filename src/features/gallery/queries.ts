@@ -81,13 +81,20 @@ export function useGallery(collectionId: string, options: GalleryOptions) {
 	});
 }
 
-export function useLoved() {
+export function useLovedUploaders() {
+	return useQuery({
+		queryKey: ["loved", "uploaders"],
+		queryFn: () => apiFetch<CollectionUploader[]>("/v1/loved/uploaders"),
+	});
+}
+
+export function useLoved(options: GalleryOptions) {
 	return useInfiniteQuery({
-		queryKey: ["loved"],
+		queryKey: ["loved", "photos", options],
 		initialPageParam: "",
 		queryFn: ({ pageParam }) =>
 			apiFetchEnvelope<GalleryItem[]>(
-				`/v1/loved?limit=40${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ""}`,
+				`/v1/loved?limit=40&sort=${options.sort}&media=${options.media}${options.uploaderId ? `&uploaderId=${encodeURIComponent(options.uploaderId)}` : ""}${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ""}`,
 			),
 		getNextPageParam: (last) => last.page.nextCursor ?? undefined,
 	});

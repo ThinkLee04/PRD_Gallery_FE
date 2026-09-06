@@ -1,19 +1,49 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useMatch } from "react-router-dom";
 import { AppShell } from "./AppShell";
+import { GalleryFilterControls } from "./GalleryFilterControls";
 import { GalleryGrid } from "./GalleryGrid";
-import { useLoved } from "./queries";
+import { useLoved, useLovedUploaders } from "./queries";
+import type { GalleryOptions } from "./types";
 
 export function LovedPage() {
 	const photoId = useMatch("/loved/photo/:photoId")?.params.photoId;
 	const [lovedHeaderVisible, setLovedHeaderVisible] = useState(true);
-	const loved = useLoved();
+	const [galleryOptions, setGalleryOptions] = useState<GalleryOptions>({
+		sort: "captured_desc",
+		media: "all",
+		uploaderId: null,
+	});
+	const uploaders = useLovedUploaders();
+	const loved = useLoved(galleryOptions);
 	const items = loved.data?.pages.flatMap((page) => page.data) ?? [];
+	const filtersActive =
+		galleryOptions.sort !== "captured_desc" ||
+		galleryOptions.media !== "all" ||
+		galleryOptions.uploaderId !== null;
+	useEffect(() => {
+		if (
+			galleryOptions.uploaderId !== null &&
+			uploaders.data !== undefined &&
+			!uploaders.data.some(
+				(uploader) => uploader.id === galleryOptions.uploaderId,
+			)
+		)
+			setGalleryOptions((current) => ({ ...current, uploaderId: null }));
+	}, [galleryOptions.uploaderId, uploaders.data]);
 	const loadMore = useCallback(() => {
 		if (!loved.isFetchingNextPage) void loved.fetchNextPage();
 	}, [loved]);
 	return (
-		<AppShell>
+		<AppShell
+			actions={
+				<GalleryFilterControls
+					options={galleryOptions}
+					uploaders={uploaders.data}
+					onChange={setGalleryOptions}
+				/>
+			}
+		>
 			<main>
 				{lovedHeaderVisible ? (
 					<header className="border-b border-[#e6e3dc] bg-[#f7f6f2] px-4 pb-5 pt-2 sm:px-6 sm:pb-6 sm:pt-3">
@@ -56,7 +86,9 @@ export function LovedPage() {
 				{!loved.isLoading && items.length === 0 ? (
 					<div className="px-4 py-24 text-center">
 						<p className="text-sm text-[#73716b]">
-							Photos you love will appear here.
+							{filtersActive
+								? "No loved photos match these filters."
+								: "Photos you love will appear here."}
 						</p>
 					</div>
 				) : null}
