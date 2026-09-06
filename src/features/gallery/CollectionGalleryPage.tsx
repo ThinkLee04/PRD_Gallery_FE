@@ -431,18 +431,18 @@ export function CollectionGalleryPage() {
 			actions={albumActions}
 		>
 			<main>
-				<header className="px-4 py-3 sm:px-6">
-					<div className="min-w-0">
-						<h1 className="truncate text-base font-medium tracking-tight">
+				<header className="border-b border-[#e6e3dc] bg-[#f7f6f2] px-4 pb-5 pt-2 sm:px-6 sm:pb-6 sm:pt-3">
+					<div className="min-w-0 max-w-4xl">
+						<h1 className="text-xl font-medium leading-tight tracking-tight sm:text-2xl">
 							{collection.data?.name ?? "Loading…"}
 						</h1>
 						{collection.data?.description ? (
-							<p className="mt-1 max-w-2xl text-sm leading-6 text-[#73716b]">
+							<p className="mt-2 max-w-2xl text-sm leading-6 text-[#73716b]">
 								{collection.data.description}
 							</p>
 						) : null}
 						{collection.data?.eventDate ? (
-							<p className="mt-1 text-xs text-[#918e87]">
+							<p className="mt-2 text-xs text-[#918e87]">
 								{new Intl.DateTimeFormat(undefined, {
 									dateStyle: "long",
 									timeZone: "UTC",
