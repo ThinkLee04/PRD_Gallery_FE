@@ -124,7 +124,7 @@ export function CollectionGalleryPage() {
 		(uploader) => uploader.id === galleryOptions.uploaderId,
 	);
 	const albumActions = (
-		<div className="flex items-center justify-end gap-1 sm:justify-start">
+		<div className="flex items-center justify-end gap-1 sm:justify-start sm:gap-2">
 			<details className="relative hidden sm:block">
 				<summary
 					aria-label={`Sort: ${sortLabel}`}

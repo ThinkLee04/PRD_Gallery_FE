@@ -48,7 +48,7 @@ export function AppShell({
 	return (
 		<div className="min-h-screen bg-[#f7f6f2] text-[#1c1c1a]">
 			<header className="sticky top-3 z-40 mx-3 mb-3 sm:top-4 sm:mx-4 sm:mb-4">
-				<div className="mx-auto flex h-[52px] w-full items-center rounded-full border border-black/10 bg-[rgba(255,255,255,0.72)] px-1 backdrop-blur-lg sm:grid sm:w-[min(980px,calc(100vw-2rem))] sm:grid-cols-[1fr_auto_1fr] sm:px-4">
+				<div className="mx-auto flex h-14 w-full items-center rounded-full border border-black/10 bg-[rgba(255,255,255,0.72)] px-2 backdrop-blur-lg sm:grid sm:w-[min(1000px,calc(100vw-2rem))] sm:grid-cols-[1fr_auto_1fr] sm:px-5">
 					<nav
 						aria-label="Primary"
 						className="flex shrink-0 items-center gap-1 text-sm sm:justify-self-start sm:gap-2"
@@ -71,7 +71,7 @@ export function AppShell({
 						</NavLink>
 					</nav>
 					{actions ? (
-						<div className="min-w-0 flex-1 text-xs sm:flex sm:flex-none sm:items-center sm:justify-self-center sm:border-x sm:border-black/10 sm:px-3 sm:text-sm">
+						<div className="min-w-0 flex-1 text-xs sm:flex sm:flex-none sm:items-center sm:justify-self-center sm:px-3 sm:text-sm">
 							{actions}
 						</div>
 					) : (
