@@ -435,16 +435,16 @@ export function CollectionGalleryPage() {
 				{albumHeaderVisible ? (
 					<header className="border-b border-[#e6e3dc] bg-[#f7f6f2] px-4 pb-5 pt-2 sm:px-6 sm:pb-6 sm:pt-3">
 						<div className="min-w-0 max-w-4xl">
-							<h1 className="text-xl font-medium leading-tight tracking-tight sm:text-2xl">
+							<h1 className="text-base font-medium leading-tight tracking-tight">
 								{collection.data?.name ?? "Loading…"}
 							</h1>
 							{collection.data?.description ? (
-								<p className="mt-2 max-w-2xl text-sm leading-6 text-[#73716b]">
+								<p className="mt-1.5 max-w-2xl text-xs leading-5 text-[#73716b]">
 									{collection.data.description}
 								</p>
 							) : null}
 							{collection.data?.eventDate ? (
-								<p className="mt-2 text-xs text-[#918e87]">
+								<p className="mt-1.5 text-[11px] text-[#918e87]">
 									{new Intl.DateTimeFormat(undefined, {
 										dateStyle: "long",
 										timeZone: "UTC",
@@ -578,6 +578,7 @@ export function CollectionGalleryPage() {
 					loadMore={loadMore}
 					basePath={`/albums/${collectionId}`}
 					photoId={photoId}
+					fillViewport={!albumHeaderVisible}
 					onScrollPositionChange={(scrollTop) =>
 						setAlbumHeaderVisible(scrollTop <= 8)
 					}

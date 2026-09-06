@@ -115,6 +115,7 @@ export function GalleryGrid({
 	photoId,
 	onRemove,
 	onScrollPositionChange,
+	fillViewport = false,
 }: {
 	items: GalleryItem[];
 	hasMore: boolean;
@@ -123,6 +124,7 @@ export function GalleryGrid({
 	photoId?: string;
 	onRemove?: (photoId: string) => void;
 	onScrollPositionChange?: (scrollTop: number) => void;
+	fillViewport?: boolean;
 }) {
 	const parentRef = useRef<HTMLDivElement>(null);
 	const [width, setWidth] = useState(1000);
@@ -182,7 +184,7 @@ export function GalleryGrid({
 		<>
 			<section
 				ref={parentRef}
-				className="h-[calc(100dvh-7rem)] overflow-y-auto px-1"
+				className={`${fillViewport ? "h-[calc(100dvh-4.25rem)] sm:h-[calc(100dvh-4.5rem)]" : "h-[calc(100dvh-7rem)]"} overflow-y-auto px-1`}
 				aria-label="Photo gallery"
 				onScroll={(event) =>
 					onScrollPositionChange?.(event.currentTarget.scrollTop)
