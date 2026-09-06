@@ -12,6 +12,13 @@ export interface Collection {
 	creatorName?: string;
 	creatorAvatarUrl?: string | null;
 	cover?: MediaAsset | null;
+	coverPhotoId?: string | null;
+}
+
+export interface CollectionFilters {
+	search: string;
+	dateFrom: string | null;
+	dateTo: string | null;
 }
 
 export interface GalleryOptions {

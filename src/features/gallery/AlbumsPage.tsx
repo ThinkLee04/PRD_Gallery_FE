@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../../lib/api";
 import { useMe } from "../auth/useMe";
@@ -42,6 +42,34 @@ function ArchiveIcon() {
 			strokeWidth="1.5"
 		>
 			<path d="M3.5 6.5h13v9h-13zM2.5 3.5h15v3h-15zM8 10h4" />
+		</svg>
+	);
+}
+
+function SearchIcon() {
+	return (
+		<svg
+			aria-hidden="true"
+			viewBox="0 0 20 20"
+			className="h-4 w-4 fill-none stroke-current"
+			strokeWidth="1.5"
+		>
+			<circle cx="8.5" cy="8.5" r="5" />
+			<path d="m12.25 12.25 4 4" />
+		</svg>
+	);
+}
+
+function CalendarIcon() {
+	return (
+		<svg
+			aria-hidden="true"
+			viewBox="0 0 20 20"
+			className="h-4 w-4 fill-none stroke-current"
+			strokeWidth="1.5"
+		>
+			<rect x="3" y="4.5" width="14" height="12" rx="2" />
+			<path d="M6.5 2.5v4m7-4v4M3 8.5h14" />
 		</svg>
 	);
 }
@@ -218,7 +246,15 @@ function AlbumCard({
 export function AlbumsPage() {
 	const [archived, setArchived] = useState(false);
 	const [creating, setCreating] = useState(false);
-	const query = useCollections(archived ? "archived" : "active");
+	const [search, setSearch] = useState("");
+	const [dateFrom, setDateFrom] = useState<string | null>(null);
+	const [dateTo, setDateTo] = useState<string | null>(null);
+	const deferredSearch = useDeferredValue(search.trim());
+	const query = useCollections(archived ? "archived" : "active", {
+		search: deferredSearch,
+		dateFrom,
+		dateTo,
+	});
 	const me = useMe();
 	const client = useQueryClient();
 	const create = useMutation({
@@ -245,6 +281,8 @@ export function AlbumsPage() {
 			void client.invalidateQueries({ queryKey: collectionKeys.all }),
 	});
 	const albums = query.data?.pages.flatMap((page) => page.data) ?? [];
+	const filtersActive =
+		search.trim() !== "" || dateFrom !== null || dateTo !== null;
 
 	useEffect(() => {
 		if (!creating) return;
@@ -290,30 +328,122 @@ export function AlbumsPage() {
 					</div>
 				</header>
 
-				<div className="mb-8 mt-6 flex items-center justify-between sm:mb-10">
-					<div className="flex items-center gap-1 rounded-full bg-[#ece9e2] p-1 text-sm">
-						<button
-							type="button"
-							onClick={() => setArchived(false)}
-							className={`rounded-full px-4 py-2 font-medium transition ${!archived ? "bg-white text-[#292724] shadow-sm" : "text-[#77726b] hover:text-[#292724]"}`}
-						>
-							Albums
-						</button>
-						<button
-							type="button"
-							onClick={() => setArchived(true)}
-							className={`flex items-center gap-2 rounded-full px-4 py-2 font-medium transition ${archived ? "bg-white text-[#292724] shadow-sm" : "text-[#77726b] hover:text-[#292724]"}`}
-						>
-							<ArchiveIcon /> Archive
-						</button>
+				<nav
+					aria-label="Album views and filters"
+					className="mb-8 mt-6 flex flex-col gap-3 sm:mb-10 lg:flex-row lg:items-center lg:justify-between"
+				>
+					<div className="flex items-center justify-between gap-4">
+						<div className="flex items-center gap-1 rounded-full bg-[#ece9e2] p-1 text-sm">
+							<button
+								type="button"
+								onClick={() => setArchived(false)}
+								className={`rounded-full px-4 py-2 font-medium transition ${!archived ? "bg-white text-[#292724] shadow-sm" : "text-[#77726b] hover:text-[#292724]"}`}
+							>
+								Albums
+							</button>
+							<button
+								type="button"
+								onClick={() => setArchived(true)}
+								className={`flex items-center gap-2 rounded-full px-4 py-2 font-medium transition ${archived ? "bg-white text-[#292724] shadow-sm" : "text-[#77726b] hover:text-[#292724]"}`}
+							>
+								<ArchiveIcon /> Archive
+							</button>
+						</div>
+						{albums.length > 0 ? (
+							<p className="text-sm text-[#8b867e] lg:hidden">
+								{albums.length} {albums.length === 1 ? "album" : "albums"}
+							</p>
+						) : null}
 					</div>
-					{albums.length > 0 ? (
-						<p className="hidden text-sm text-[#8b867e] sm:block">
-							{albums.length} {albums.length === 1 ? "album" : "albums"}
-							{query.hasNextPage ? " loaded" : ""}
-						</p>
-					) : null}
-				</div>
+					<div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+						<label className="relative block min-w-0 sm:w-64">
+							<span className="sr-only">Search albums</span>
+							<span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#89837b]">
+								<SearchIcon />
+							</span>
+							<input
+								type="search"
+								value={search}
+								onChange={(event) => setSearch(event.target.value)}
+								maxLength={120}
+								placeholder="Search albums"
+								className="h-11 w-full rounded-full border border-[#d7d2c9] bg-white/55 pl-10 pr-4 text-sm placeholder:text-[#9b968e] hover:bg-white/80 focus:border-[#8e877e] focus:bg-white"
+							/>
+						</label>
+						<details className="group relative">
+							<summary
+								className={`flex h-11 cursor-pointer list-none items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium marker:hidden hover:bg-white/80 ${dateFrom || dateTo ? "border-[#827262] bg-[#f2ebe3] text-[#5f4e40]" : "border-[#d7d2c9] bg-white/55 text-[#5f5b55]"}`}
+							>
+								<CalendarIcon /> Date
+								{dateFrom || dateTo ? (
+									<span className="h-1.5 w-1.5 rounded-full bg-[#9a765a]" />
+								) : null}
+							</summary>
+							<div className="absolute right-0 z-30 mt-2 w-full min-w-72 rounded-2xl border border-[#d7d2c9] bg-[rgba(253,252,248,0.98)] p-4 shadow-lg backdrop-blur-md sm:w-80">
+								<p className="text-sm font-medium">Event date</p>
+								<p className="mt-1 text-xs text-[#817c74]">
+									Show albums whose event date is within this range.
+								</p>
+								<div className="mt-4 grid grid-cols-2 gap-3">
+									<label className="text-xs text-[#706b64]">
+										From
+										<input
+											type="date"
+											value={dateFrom ?? ""}
+											max={dateTo ?? undefined}
+											onChange={(event) =>
+												setDateFrom(event.target.value || null)
+											}
+											className="mt-1.5 w-full rounded-lg border border-[#d8d3ca] bg-white px-2.5 py-2 text-sm"
+										/>
+									</label>
+									<label className="text-xs text-[#706b64]">
+										To
+										<input
+											type="date"
+											value={dateTo ?? ""}
+											min={dateFrom ?? undefined}
+											onChange={(event) =>
+												setDateTo(event.target.value || null)
+											}
+											className="mt-1.5 w-full rounded-lg border border-[#d8d3ca] bg-white px-2.5 py-2 text-sm"
+										/>
+									</label>
+								</div>
+								<div className="mt-4 flex items-center justify-between">
+									<button
+										type="button"
+										disabled={!dateFrom && !dateTo}
+										onClick={() => {
+											setDateFrom(null);
+											setDateTo(null);
+										}}
+										className="text-xs font-medium text-[#777169] hover:text-[#292724] disabled:opacity-40"
+									>
+										Clear dates
+									</button>
+									<button
+										type="button"
+										onClick={(event) =>
+											event.currentTarget
+												.closest("details")
+												?.removeAttribute("open")
+										}
+										className="rounded-full bg-[#292724] px-4 py-2 text-xs font-medium text-white"
+									>
+										Done
+									</button>
+								</div>
+							</div>
+						</details>
+						{albums.length > 0 ? (
+							<p className="hidden whitespace-nowrap text-sm text-[#8b867e] lg:block">
+								{albums.length} {albums.length === 1 ? "album" : "albums"}
+								{query.hasNextPage ? " loaded" : ""}
+							</p>
+						) : null}
+					</div>
+				</nav>
 
 				{query.isLoading ? <AlbumsLoading /> : null}
 				{!query.isLoading && albums.length > 0 ? (
@@ -367,16 +497,32 @@ export function AlbumsPage() {
 							<EmptyAlbumArtwork />
 						</div>
 						<h2 className="mt-8 text-xl font-medium tracking-[-0.02em]">
-							{archived
-								? "Nothing in the archive"
-								: "Your first story starts here"}
+							{filtersActive
+								? "No matching albums"
+								: archived
+									? "Nothing in the archive"
+									: "Your first story starts here"}
 						</h2>
 						<p className="mt-2 text-sm leading-6 text-[#77736c]">
-							{archived
-								? "Albums you archive will stay safely stored in this space."
-								: "Create an album for a trip, a celebration, or the everyday moments worth keeping."}
+							{filtersActive
+								? "Try a different search or clear the date range."
+								: archived
+									? "Albums you archive will stay safely stored in this space."
+									: "Create an album for a trip, a celebration, or the everyday moments worth keeping."}
 						</p>
-						{!archived ? (
+						{filtersActive ? (
+							<button
+								type="button"
+								onClick={() => {
+									setSearch("");
+									setDateFrom(null);
+									setDateTo(null);
+								}}
+								className="mt-6 rounded-full border border-[#cbc6bd] bg-white/50 px-5 py-2.5 text-sm font-medium hover:bg-white"
+							>
+								Clear filters
+							</button>
+						) : !archived ? (
 							<button
 								type="button"
 								onClick={openCreate}

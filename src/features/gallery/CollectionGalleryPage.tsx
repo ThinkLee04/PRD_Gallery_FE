@@ -36,6 +36,7 @@ export function CollectionGalleryPage() {
 	const [uploadPopupOpen, setUploadPopupOpen] = useState(false);
 	const [albumHeaderVisible, setAlbumHeaderVisible] = useState(true);
 	const [editing, setEditing] = useState(false);
+	const [editingCover, setEditingCover] = useState(false);
 	const [confirmation, setConfirmation] = useState<
 		{ action: "archive" } | { action: "remove"; photoId: string } | null
 	>(null);
@@ -54,6 +55,23 @@ export function CollectionGalleryPage() {
 			}),
 		onSuccess: () => {
 			setEditing(false);
+			void queryClient.invalidateQueries({
+				queryKey: collectionKeys.detail(collectionId),
+			});
+			void queryClient.invalidateQueries({ queryKey: collectionKeys.all });
+		},
+	});
+	const cover = useMutation({
+		mutationFn: (photoId: string | null) =>
+			apiFetch<{ id: string; coverPhotoId: string | null }>(
+				`/v1/collections/${collectionId}/cover`,
+				{
+					method: "PUT",
+					body: JSON.stringify({ photoId }),
+				},
+			),
+		onSuccess: () => {
+			setEditingCover(false);
 			void queryClient.invalidateQueries({
 				queryKey: collectionKeys.detail(collectionId),
 			});
@@ -276,6 +294,19 @@ export function CollectionGalleryPage() {
 						<button
 							type="button"
 							onClick={(event) => {
+								cover.reset();
+								setEditing(false);
+								setEditingCover(true);
+								setAlbumHeaderVisible(true);
+								event.currentTarget.closest("details")?.removeAttribute("open");
+							}}
+							className="block w-full px-2 py-2 text-left hover:bg-[#efede7]"
+						>
+							Edit thumbnail
+						</button>
+						<button
+							type="button"
+							onClick={(event) => {
 								archive.reset();
 								setConfirmation({ action: "archive" });
 								event.currentTarget.closest("details")?.removeAttribute("open");
@@ -401,6 +432,21 @@ export function CollectionGalleryPage() {
 								className="block min-h-11 w-full px-2 py-2 text-left hover:bg-[#efede7]"
 							>
 								Edit details
+							</button>
+							<button
+								type="button"
+								onClick={(event) => {
+									cover.reset();
+									setEditing(false);
+									setEditingCover(true);
+									setAlbumHeaderVisible(true);
+									event.currentTarget
+										.closest("details")
+										?.removeAttribute("open");
+								}}
+								className="block min-h-11 w-full px-2 py-2 text-left hover:bg-[#efede7]"
+							>
+								Edit thumbnail
 							</button>
 							<button
 								type="button"
@@ -572,15 +618,56 @@ export function CollectionGalleryPage() {
 						Unable to load this album.
 					</p>
 				) : null}
+				{editingCover ? (
+					<div className="mx-1 mb-1 flex flex-col gap-3 rounded-lg border border-[#d8c2a9] bg-[#f3e9dc] px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+						<div>
+							<p className="font-medium text-[#493d32]">
+								Choose an album thumbnail
+							</p>
+							<p className="mt-0.5 text-xs text-[#796b5d]">
+								Select any ready photo below. Videos can’t be used as
+								thumbnails.
+							</p>
+							{cover.isError ? (
+								<p role="alert" className="mt-1 text-xs text-[#a53e45]">
+									{cover.error.message}
+								</p>
+							) : null}
+						</div>
+						<div className="flex shrink-0 items-center gap-3">
+							<button
+								type="button"
+								onClick={() => cover.mutate(null)}
+								disabled={cover.isPending}
+								className="text-xs font-medium text-[#6c5c4d] underline-offset-4 hover:underline disabled:opacity-50"
+							>
+								Use first photo
+							</button>
+							<button
+								type="button"
+								onClick={() => setEditingCover(false)}
+								disabled={cover.isPending}
+								className="rounded-full border border-[#c9ad8e] bg-white/50 px-3 py-1.5 text-xs font-medium hover:bg-white disabled:opacity-50"
+							>
+								Cancel
+							</button>
+						</div>
+					</div>
+				) : null}
 				<GalleryGrid
 					items={items}
 					hasMore={Boolean(gallery.hasNextPage)}
 					loadMore={loadMore}
 					basePath={`/albums/${collectionId}`}
 					photoId={photoId}
-					fillViewport={!albumHeaderVisible}
+					coverSelectionMode={editingCover}
+					selectedCoverPhotoId={collection.data?.coverPhotoId}
+					onSelectCover={(id) => {
+						if (!cover.isPending) cover.mutate(id);
+					}}
+					fillViewport={!albumHeaderVisible && !editingCover}
 					onScrollPositionChange={(scrollTop) =>
-						setAlbumHeaderVisible(scrollTop <= 8)
+						setAlbumHeaderVisible(editingCover || scrollTop <= 8)
 					}
 					onRemove={
 						collection.data?.canManage
