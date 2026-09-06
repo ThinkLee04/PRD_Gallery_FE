@@ -129,7 +129,7 @@ export function CollectionGalleryPage() {
 					aria-label={`Sort: ${sortLabel}`}
 					className={`flex min-h-10 cursor-pointer list-none items-center whitespace-nowrap border-b px-2 text-[#53514c] hover:text-[#1c1c1a] ${galleryOptions.sort !== "captured_desc" ? "border-[#8d8981]" : "border-transparent"}`}
 				>
-					Sort<span className="hidden xl:inline"> · {sortLabel}</span>
+					Sort
 				</summary>
 				<div className="absolute left-0 z-50 mt-2 max-h-[calc(100dvh-5rem)] w-64 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-lg border border-[#d8d4cb] bg-[rgba(253,252,248,0.96)] p-2 backdrop-blur-md">
 					{(
@@ -181,9 +181,6 @@ export function CollectionGalleryPage() {
 					className={`flex min-h-10 cursor-pointer list-none items-center whitespace-nowrap border-b px-2 text-[#53514c] hover:text-[#1c1c1a] ${galleryOptions.uploaderId !== null ? "border-[#8d8981]" : "border-transparent"}`}
 				>
 					Uploader
-					<span className="hidden xl:inline">
-						· {selectedUploader?.displayName ?? "All uploaders"}
-					</span>
 				</summary>
 				<div className="absolute left-0 z-50 mt-2 max-h-[calc(100dvh-5rem)] w-56 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-lg border border-[#d8d4cb] bg-[rgba(253,252,248,0.96)] p-2 backdrop-blur-md">
 					<button
@@ -235,7 +232,7 @@ export function CollectionGalleryPage() {
 					aria-label={`Media type: ${mediaLabel}`}
 					className={`flex min-h-10 cursor-pointer list-none items-center whitespace-nowrap border-b px-2 text-[#53514c] hover:text-[#1c1c1a] ${galleryOptions.media !== "all" ? "border-[#8d8981]" : "border-transparent"}`}
 				>
-					Media type<span className="hidden xl:inline"> · {mediaLabel}</span>
+					Media type
 				</summary>
 				<div className="absolute left-0 z-50 mt-2 w-40 rounded-lg border border-[#d8d4cb] bg-[rgba(253,252,248,0.96)] p-2 backdrop-blur-md">
 					{(
