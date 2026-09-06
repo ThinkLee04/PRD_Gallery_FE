@@ -18,7 +18,7 @@ const USER: Me = {
 	avatarUrl: null,
 	approvalStatus: "APPROVED",
 	isAdmin: false,
-	vault: { id: "v1", name: "Photo Vault", role: "MEMBER" },
+	vault: { id: "v1", name: "Paradise's Gallery", role: "MEMBER" },
 };
 
 function renderGuard() {

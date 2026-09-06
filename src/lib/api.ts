@@ -1,4 +1,4 @@
-// API client for the Photo Vault SPA.
+// API client for the Paradise's Gallery SPA.
 //
 // Same-origin by default: in dev the Vite proxy forwards /auth and /v1 to the
 // API (http://localhost:3000); in production Caddy serves this build and proxies

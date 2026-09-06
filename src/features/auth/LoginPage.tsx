@@ -19,7 +19,7 @@ export function LoginPage() {
 	return (
 		<main className="flex min-h-screen items-center justify-center bg-[#f7f6f2] px-5 text-[#1c1c1a]">
 			<div className="w-full max-w-sm border-y border-[#e6e3dc] py-10">
-				<h1 className="text-2xl font-medium">Your shared memories</h1>
+				<h1 className="text-2xl font-medium">Paradise's Gallery</h1>
 				<p className="mt-3 text-sm leading-6 text-[#73716b]">
 					Sign in to enter this private photo collection.
 				</p>

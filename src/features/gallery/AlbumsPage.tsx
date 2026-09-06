@@ -305,7 +305,7 @@ export function AlbumsPage() {
 					<div className="flex flex-col justify-between gap-8 sm:flex-row sm:items-end">
 						<div>
 							<p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-[#8a6f58]">
-								{me.data?.vault?.name || "Your photo vault"}
+								Paradise's Gallery
 							</p>
 							<h1 className="max-w-3xl text-4xl font-medium tracking-[-0.045em] text-[#24221f] sm:text-5xl lg:text-[3.5rem] lg:leading-[1.05]">
 								{archived ? "Albums tucked away" : "Every story, all together"}
