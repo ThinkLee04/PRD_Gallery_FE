@@ -184,7 +184,7 @@ export function GalleryGrid({
 		<>
 			<section
 				ref={parentRef}
-				className={`${fillViewport ? "-mt-16 h-[100dvh] sm:-mt-[4.25rem]" : "h-[calc(100dvh-7rem)]"} overflow-y-auto px-1`}
+				className={`${fillViewport ? "-mt-[4.25rem] h-[100dvh] sm:-mt-[4.5rem]" : "h-[calc(100dvh-7rem)]"} overflow-y-auto px-1`}
 				aria-label="Photo gallery"
 				onScroll={(event) =>
 					onScrollPositionChange?.(event.currentTarget.scrollTop)
