@@ -123,13 +123,15 @@ export function CollectionGalleryPage() {
 		(uploader) => uploader.id === galleryOptions.uploaderId,
 	);
 	const albumActions = (
-		<div className="flex items-center gap-3">
-			<details className="relative">
-				<summary className="cursor-pointer list-none whitespace-nowrap border-b border-transparent py-1 text-[#53514c] hover:border-[#53514c]">
-					<span className="hidden sm:inline">Sort · </span>
-					{sortLabel}
+		<div className="flex items-center justify-end gap-1 sm:justify-start">
+			<details className="relative hidden sm:block">
+				<summary
+					aria-label={`Sort: ${sortLabel}`}
+					className={`flex min-h-10 cursor-pointer list-none items-center whitespace-nowrap border-b px-2 text-[#53514c] hover:text-[#1c1c1a] ${galleryOptions.sort !== "captured_desc" ? "border-[#8d8981]" : "border-transparent"}`}
+				>
+					Sort<span className="hidden xl:inline"> · {sortLabel}</span>
 				</summary>
-				<div className="absolute right-0 z-50 mt-3 max-h-[calc(100dvh-6rem)] w-64 overflow-y-auto border border-[#d8d4cb] bg-[#fdfcf8] p-2 shadow-lg shadow-black/5">
+				<div className="absolute left-0 z-50 mt-2 max-h-[calc(100dvh-5rem)] w-64 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-lg border border-[#d8d4cb] bg-[rgba(253,252,248,0.96)] p-2 backdrop-blur-md">
 					{(
 						[
 							[
@@ -173,11 +175,17 @@ export function CollectionGalleryPage() {
 					))}
 				</div>
 			</details>
-			<details className="relative">
-				<summary className="cursor-pointer list-none whitespace-nowrap border-b border-transparent py-1 text-[#53514c] hover:border-[#53514c]">
-					{selectedUploader?.displayName ?? "All uploaders"}
+			<details className="relative hidden sm:block">
+				<summary
+					aria-label={`Uploader: ${selectedUploader?.displayName ?? "All uploaders"}`}
+					className={`flex min-h-10 cursor-pointer list-none items-center whitespace-nowrap border-b px-2 text-[#53514c] hover:text-[#1c1c1a] ${galleryOptions.uploaderId !== null ? "border-[#8d8981]" : "border-transparent"}`}
+				>
+					Uploader
+					<span className="hidden xl:inline">
+						· {selectedUploader?.displayName ?? "All uploaders"}
+					</span>
 				</summary>
-				<div className="absolute right-0 z-50 mt-3 max-h-72 w-56 overflow-y-auto border border-[#d8d4cb] bg-[#fdfcf8] p-2 shadow-lg shadow-black/5">
+				<div className="absolute left-0 z-50 mt-2 max-h-[calc(100dvh-5rem)] w-56 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-lg border border-[#d8d4cb] bg-[rgba(253,252,248,0.96)] p-2 backdrop-blur-md">
 					<button
 						type="button"
 						onClick={(event) => {
@@ -222,11 +230,14 @@ export function CollectionGalleryPage() {
 					))}
 				</div>
 			</details>
-			<details className="relative">
-				<summary className="cursor-pointer list-none whitespace-nowrap border-b border-transparent py-1 text-[#53514c] hover:border-[#53514c]">
-					{mediaLabel}
+			<details className="relative hidden sm:block">
+				<summary
+					aria-label={`Media type: ${mediaLabel}`}
+					className={`flex min-h-10 cursor-pointer list-none items-center whitespace-nowrap border-b px-2 text-[#53514c] hover:text-[#1c1c1a] ${galleryOptions.media !== "all" ? "border-[#8d8981]" : "border-transparent"}`}
+				>
+					Media type<span className="hidden xl:inline"> · {mediaLabel}</span>
 				</summary>
-				<div className="absolute right-0 z-50 mt-3 w-40 border border-[#d8d4cb] bg-[#fdfcf8] p-2">
+				<div className="absolute left-0 z-50 mt-2 w-40 rounded-lg border border-[#d8d4cb] bg-[rgba(253,252,248,0.96)] p-2 backdrop-blur-md">
 					{(
 						[
 							["all", "Photos & videos"],
@@ -249,11 +260,11 @@ export function CollectionGalleryPage() {
 				</div>
 			</details>
 			{collection.data?.canManage ? (
-				<details className="relative">
-					<summary className="cursor-pointer list-none border-b border-transparent py-1 text-[#53514c] hover:border-[#53514c]">
+				<details className="relative hidden sm:block">
+					<summary className="flex min-h-10 cursor-pointer list-none items-center border-b border-transparent px-2 text-[#53514c] hover:text-[#1c1c1a]">
 						More
 					</summary>
-					<div className="absolute right-0 z-50 mt-3 w-44 border border-[#d8d4cb] bg-[#fdfcf8] p-2">
+					<div className="absolute right-0 z-50 mt-2 w-44 rounded-lg border border-[#d8d4cb] bg-[rgba(253,252,248,0.96)] p-2 backdrop-blur-md">
 						<button
 							type="button"
 							onClick={(event) => {
@@ -278,6 +289,138 @@ export function CollectionGalleryPage() {
 					</div>
 				</details>
 			) : null}
+			<details className="relative sm:hidden">
+				<summary className="flex min-h-10 cursor-pointer list-none items-center border-b border-transparent px-1 text-[#53514c] hover:text-[#1c1c1a]">
+					More
+				</summary>
+				<div className="fixed left-3 right-3 top-[4.5rem] z-50 max-h-[calc(100dvh-5.25rem)] overflow-y-auto rounded-lg border border-[#d8d4cb] bg-[rgba(253,252,248,0.97)] p-2 text-sm backdrop-blur-md">
+					<p className="px-2 pb-1 pt-2 text-xs text-[#918e87]">
+						Sort · {sortLabel}
+					</p>
+					{(
+						[
+							["captured_asc", "Captured date · ASC"],
+							["captured_desc", "Captured date · DESC"],
+							["uploaded_asc", "Uploaded date · ASC"],
+							["uploaded_desc", "Uploaded date · DESC"],
+							["alphabet_asc", "Alphabet · ASC"],
+							["alphabet_desc", "Alphabet · DESC"],
+						] as const
+					).map(([value, label]) => (
+						<button
+							key={value}
+							type="button"
+							onClick={(event) => {
+								setGalleryOptions((current) => ({ ...current, sort: value }));
+								event.currentTarget.closest("details")?.removeAttribute("open");
+							}}
+							className={`block min-h-11 w-full px-2 py-2 text-left hover:bg-[#efede7] ${galleryOptions.sort === value ? "bg-[#efede7] font-medium" : ""}`}
+						>
+							{label}
+						</button>
+					))}
+					<div className="my-2 border-t border-[#e6e3dc]" />
+					<p className="px-2 pb-1 pt-2 text-xs text-[#918e87]">
+						Uploader · {selectedUploader?.displayName ?? "All uploaders"}
+					</p>
+					<button
+						type="button"
+						onClick={(event) => {
+							setGalleryOptions((current) => ({
+								...current,
+								uploaderId: null,
+							}));
+							event.currentTarget.closest("details")?.removeAttribute("open");
+						}}
+						className={`block min-h-11 w-full px-2 py-2 text-left hover:bg-[#efede7] ${galleryOptions.uploaderId === null ? "bg-[#efede7] font-medium" : ""}`}
+					>
+						All uploaders
+					</button>
+					{uploaders.data?.map((uploader) => (
+						<button
+							key={uploader.id}
+							type="button"
+							onClick={(event) => {
+								setGalleryOptions((current) => ({
+									...current,
+									uploaderId: uploader.id,
+								}));
+								event.currentTarget.closest("details")?.removeAttribute("open");
+							}}
+							className={`flex min-h-11 w-full items-center gap-2 px-2 py-2 text-left hover:bg-[#efede7] ${galleryOptions.uploaderId === uploader.id ? "bg-[#efede7] font-medium" : ""}`}
+						>
+							{uploader.avatarUrl ? (
+								<img
+									src={uploader.avatarUrl}
+									alt=""
+									referrerPolicy="no-referrer"
+									className="h-6 w-6 rounded-full"
+								/>
+							) : (
+								<span className="h-6 w-6 rounded-full bg-[#ddd9d0]" />
+							)}
+							<span className="min-w-0 flex-1 truncate">
+								{uploader.displayName}
+							</span>
+							<span className="text-[#918e87]">{uploader.photoCount}</span>
+						</button>
+					))}
+					<div className="my-2 border-t border-[#e6e3dc]" />
+					<p className="px-2 pb-1 pt-2 text-xs text-[#918e87]">
+						Media type · {mediaLabel}
+					</p>
+					{(
+						[
+							["all", "Photos & videos"],
+							["image", "Photos only"],
+							["video", "Videos only"],
+						] as const
+					).map(([value, label]) => (
+						<button
+							key={value}
+							type="button"
+							onClick={(event) => {
+								setGalleryOptions((current) => ({ ...current, media: value }));
+								event.currentTarget.closest("details")?.removeAttribute("open");
+							}}
+							className={`block min-h-11 w-full px-2 py-2 text-left hover:bg-[#efede7] ${galleryOptions.media === value ? "bg-[#efede7] font-medium" : ""}`}
+						>
+							{label}
+						</button>
+					))}
+					{collection.data?.canManage ? (
+						<>
+							<div className="my-2 border-t border-[#e6e3dc]" />
+							<p className="px-2 pb-1 pt-2 text-xs text-[#918e87]">Album</p>
+							<button
+								type="button"
+								onClick={(event) => {
+									setEditing(true);
+									event.currentTarget
+										.closest("details")
+										?.removeAttribute("open");
+								}}
+								className="block min-h-11 w-full px-2 py-2 text-left hover:bg-[#efede7]"
+							>
+								Edit details
+							</button>
+							<button
+								type="button"
+								onClick={(event) => {
+									archive.reset();
+									setConfirmation({ action: "archive" });
+									event.currentTarget
+										.closest("details")
+										?.removeAttribute("open");
+								}}
+								className="block min-h-11 w-full px-2 py-2 text-left text-[#a53e45] hover:bg-[#efede7]"
+							>
+								Archive album
+							</button>
+						</>
+					) : null}
+				</div>
+			</details>
 		</div>
 	);
 
