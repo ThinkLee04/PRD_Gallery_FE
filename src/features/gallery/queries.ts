@@ -163,12 +163,12 @@ export function useRetryPhoto() {
 	});
 }
 
-export function useRemoveFromCollection(collectionId: string) {
+export function useDeletePhoto(collectionId: string) {
 	const client = useQueryClient();
 	const queryKey = collectionKeys.photos(collectionId);
 	return useMutation({
 		mutationFn: (photoId: string) =>
-			apiFetch<void>(`/v1/collections/${collectionId}/photos/${photoId}`, {
+			apiFetch<void>(`/v1/photos/${photoId}`, {
 				method: "DELETE",
 			}),
 		onMutate: async (photoId) => {
@@ -192,15 +192,9 @@ export function useRemoveFromCollection(collectionId: string) {
 				client.setQueryData(previousKey, previousData);
 		},
 		onSettled: () => {
-			void client.invalidateQueries({
-				queryKey,
-			});
-			void client.invalidateQueries({
-				queryKey: collectionKeys.detail(collectionId),
-			});
-			void client.invalidateQueries({
-				queryKey: collectionKeys.uploaders(collectionId),
-			});
+			void client.invalidateQueries({ queryKey: collectionKeys.all });
+			void client.invalidateQueries({ queryKey: ["collection"] });
+			void client.invalidateQueries({ queryKey: ["loved"] });
 		},
 	});
 }

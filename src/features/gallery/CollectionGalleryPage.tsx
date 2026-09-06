@@ -9,8 +9,8 @@ import {
 	collectionKeys,
 	useCollection,
 	useCollectionUploaders,
+	useDeletePhoto,
 	useGallery,
-	useRemoveFromCollection,
 } from "./queries";
 import type { GalleryOptions } from "./types";
 import { useUploadFiles } from "./uploads";
@@ -90,7 +90,7 @@ export function CollectionGalleryPage() {
 	const upload = useUploadFiles(collectionId, (name, value) =>
 		setProgress((current) => ({ ...current, [name]: value })),
 	);
-	const remove = useRemoveFromCollection(collectionId);
+	const remove = useDeletePhoto(collectionId);
 	const items = gallery.data?.pages.flatMap((page) => page.data) ?? [];
 
 	useEffect(() => {
@@ -717,17 +717,17 @@ export function CollectionGalleryPage() {
 						title={
 							confirmation.action === "archive"
 								? "Archive this album?"
-								: "Remove photo from album?"
+								: "Delete photo permanently?"
 						}
 						description={
 							confirmation.action === "archive"
 								? "The album will leave your active albums. Its photos and original files will stay safely in the vault."
-								: "This photo will only be removed from this album. Its original file will stay safely in the vault."
+								: "This permanently deletes the original file, every generated image, and all album and Loved references. This cannot be undone."
 						}
 						confirmLabel={
 							confirmation.action === "archive"
 								? "Archive album"
-								: "Remove photo"
+								: "Delete photo"
 						}
 						tone="danger"
 						isPending={

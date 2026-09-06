@@ -348,8 +348,8 @@ export function GalleryGrid({
 									<button
 										type="button"
 										onClick={() => onRemove(item.id)}
-										aria-label="Remove from album"
-										title="Remove from album"
+										aria-label="Delete photo permanently"
+										title="Delete photo permanently"
 										className={`media-focus absolute left-2 top-2 h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white backdrop-blur-sm transition-opacity hover:bg-black/75 ${showInfo ? "flex" : "hidden sm:flex sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"}`}
 									>
 										<ViewerIcon name="trash" />
