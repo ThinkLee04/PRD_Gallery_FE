@@ -7,6 +7,7 @@ import {
 import { apiFetch, apiFetchEnvelope } from "../../lib/api";
 import type {
 	Collection,
+	CollectionFilters,
 	CollectionUploader,
 	GalleryItem,
 	GalleryOptions,
@@ -23,7 +24,8 @@ interface GalleryInfiniteData {
 
 export const collectionKeys = {
 	all: ["collections"] as const,
-	list: (state: "active" | "archived") => ["collections", { state }] as const,
+	list: (state: "active" | "archived", filters?: CollectionFilters) =>
+		["collections", { state, ...filters }] as const,
 	detail: (id: string) => ["collection", id] as const,
 	uploaders: (id: string) => ["collection", id, "uploaders"] as const,
 	photos: (id: string, options?: GalleryOptions) =>
@@ -32,13 +34,17 @@ export const collectionKeys = {
 			: (["collection", id, "photos"] as const),
 };
 
-export function useCollections(state: "active" | "archived" = "active") {
+export function useCollections(
+	state: "active" | "archived" = "active",
+	filters: CollectionFilters = { search: "", dateFrom: null, dateTo: null },
+) {
+	const filterQuery = `${filters.search ? `&q=${encodeURIComponent(filters.search)}` : ""}${filters.dateFrom ? `&dateFrom=${encodeURIComponent(filters.dateFrom)}` : ""}${filters.dateTo ? `&dateTo=${encodeURIComponent(filters.dateTo)}` : ""}`;
 	return useInfiniteQuery({
-		queryKey: collectionKeys.list(state),
+		queryKey: collectionKeys.list(state, filters),
 		initialPageParam: "",
 		queryFn: ({ pageParam }) =>
 			apiFetchEnvelope<Collection[]>(
-				`/v1/collections?state=${state}&limit=40${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ""}`,
+				`/v1/collections?state=${state}&limit=40${filterQuery}${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ""}`,
 			),
 		getNextPageParam: (last) => last.page.nextCursor ?? undefined,
 	});

@@ -36,6 +36,7 @@ function formatDate(
 }
 
 type ViewerIconName =
+	| "check"
 	| "close"
 	| "download"
 	| "heart"
@@ -55,6 +56,7 @@ function ViewerIcon({
 	filled?: boolean;
 }) {
 	const paths: Record<ViewerIconName, ReactNode> = {
+		check: <path d="m5 12 4 4L19 6" />,
 		close: <path d="m6 6 12 12M18 6 6 18" />,
 		download: (
 			<>
@@ -114,6 +116,9 @@ export function GalleryGrid({
 	basePath,
 	photoId,
 	onRemove,
+	coverSelectionMode = false,
+	selectedCoverPhotoId,
+	onSelectCover,
 	onScrollPositionChange,
 	fillViewport = false,
 }: {
@@ -123,6 +128,9 @@ export function GalleryGrid({
 	basePath: string;
 	photoId?: string;
 	onRemove?: (photoId: string) => void;
+	coverSelectionMode?: boolean;
+	selectedCoverPhotoId?: string | null;
+	onSelectCover?: (photoId: string) => void;
 	onScrollPositionChange?: (scrollTop: number) => void;
 	fillViewport?: boolean;
 }) {
@@ -200,12 +208,18 @@ export function GalleryGrid({
 						const height = columnWidth / (item.aspectRatio ?? 1);
 						const showInfo = infoId === item.id;
 						const assets = assetOverrides[item.id] ?? item.assets;
+						const canUseAsCover =
+							coverSelectionMode &&
+							item.mediaType === "IMAGE" &&
+							item.status === "READY" &&
+							Boolean(assets.sm);
+						const isSelectedCover = selectedCoverPhotoId === item.id;
 						const canRetry =
 							item.status === "FAILED" && Boolean(me.data?.vault);
 						return (
 							<article
 								key={item.id}
-								className="group absolute overflow-hidden rounded-[4px] bg-[#e5e2db] ring-1 ring-black/5"
+								className={`group absolute overflow-hidden rounded-[4px] bg-[#e5e2db] ring-1 ${isSelectedCover && coverSelectionMode ? "ring-4 ring-[#d8a66a]" : "ring-black/5"}`}
 								style={{
 									width: columnWidth,
 									height,
@@ -214,9 +228,18 @@ export function GalleryGrid({
 							>
 								<button
 									type="button"
-									onClick={() => navigate(`${basePath}/photo/${item.id}`)}
+									onClick={() =>
+										canUseAsCover
+											? onSelectCover?.(item.id)
+											: navigate(`${basePath}/photo/${item.id}`)
+									}
+									disabled={coverSelectionMode && !canUseAsCover}
 									className="media-focus h-full w-full"
-									aria-label={`Open ${item.fileName}`}
+									aria-label={
+										coverSelectionMode
+											? `Use ${item.fileName} as album thumbnail`
+											: `Open ${item.fileName}`
+									}
 								>
 									{assets.sm ? (
 										<img
@@ -240,7 +263,23 @@ export function GalleryGrid({
 										</div>
 									)}
 								</button>
-								{canRetry ? (
+								{coverSelectionMode ? (
+									<div
+										className={`pointer-events-none absolute inset-0 flex items-end justify-center border-2 pb-3 ${isSelectedCover ? "border-[#f4c98f]" : canUseAsCover ? "border-transparent group-hover:border-white/80" : "border-transparent bg-black/35"}`}
+									>
+										<span
+											className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md ${isSelectedCover ? "bg-[#9a6a36]/90" : canUseAsCover ? "bg-black/55" : "bg-black/45"}`}
+										>
+											{isSelectedCover ? <ViewerIcon name="check" /> : null}
+											{isSelectedCover
+												? "Current thumbnail"
+												: canUseAsCover
+													? "Choose photo"
+													: "Image unavailable"}
+										</span>
+									</div>
+								) : null}
+								{canRetry && !coverSelectionMode ? (
 									<button
 										type="button"
 										onClick={() => retry.mutate(item.id)}
@@ -252,7 +291,7 @@ export function GalleryGrid({
 									</button>
 								) : null}
 								<div
-									className={`pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-12 text-white transition-opacity duration-300 ${showInfo ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"}`}
+									className={`pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-12 text-white transition-opacity duration-300 ${coverSelectionMode ? "hidden" : showInfo ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"}`}
 								>
 									<p className="truncate text-sm font-medium">
 										{item.fileName}
@@ -278,28 +317,34 @@ export function GalleryGrid({
 										</span>
 									</div>
 								</div>
-								<button
-									type="button"
-									aria-label={item.loved ? "Remove from Loved" : "Add to Loved"}
-									onClick={() =>
-										toggle.mutate({ id: item.id, loved: item.loved })
-									}
-									title={item.loved ? "Remove from Loved" : "Add to Loved"}
-									className={`media-focus pointer-events-none absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/50 opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/75 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 [@media(hover:none)]:pointer-events-auto [@media(hover:none)]:opacity-100 ${item.loved ? "text-[#e66a71]" : "text-white"}`}
-								>
-									<ViewerIcon name="heart" filled={item.loved} />
-								</button>
-								<button
-									type="button"
-									aria-expanded={showInfo}
-									aria-label="Show photo information"
-									onClick={() => setInfoId(showInfo ? null : item.id)}
-									title="Photo information"
-									className={`media-focus absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white backdrop-blur-sm sm:hidden ${showInfo ? "bg-white/20" : ""}`}
-								>
-									<ViewerIcon name="info" />
-								</button>
-								{onRemove ? (
+								{!coverSelectionMode ? (
+									<button
+										type="button"
+										aria-label={
+											item.loved ? "Remove from Loved" : "Add to Loved"
+										}
+										onClick={() =>
+											toggle.mutate({ id: item.id, loved: item.loved })
+										}
+										title={item.loved ? "Remove from Loved" : "Add to Loved"}
+										className={`media-focus pointer-events-none absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/50 opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/75 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 [@media(hover:none)]:pointer-events-auto [@media(hover:none)]:opacity-100 ${item.loved ? "text-[#e66a71]" : "text-white"}`}
+									>
+										<ViewerIcon name="heart" filled={item.loved} />
+									</button>
+								) : null}
+								{!coverSelectionMode ? (
+									<button
+										type="button"
+										aria-expanded={showInfo}
+										aria-label="Show photo information"
+										onClick={() => setInfoId(showInfo ? null : item.id)}
+										title="Photo information"
+										className={`media-focus absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white backdrop-blur-sm sm:hidden ${showInfo ? "bg-white/20" : ""}`}
+									>
+										<ViewerIcon name="info" />
+									</button>
+								) : null}
+								{onRemove && !coverSelectionMode ? (
 									<button
 										type="button"
 										onClick={() => onRemove(item.id)}
