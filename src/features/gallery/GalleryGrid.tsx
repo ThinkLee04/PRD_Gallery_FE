@@ -12,6 +12,7 @@ import { apiFetch } from "../../lib/api";
 import { useMe } from "../auth/useMe";
 import { usePhoto, useRetryPhoto, useToggleLoved } from "./queries";
 import type { GalleryItem } from "./types";
+import { VideoThumbnail } from "./VideoThumbnail";
 
 function formatDate(
 	item: Pick<
@@ -221,11 +222,14 @@ export function GalleryGrid({
 											alt=""
 											className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.015] group-focus-within:scale-[1.015]"
 										/>
+									) : item.mediaType === "VIDEO" && item.status === "READY" ? (
+										<VideoThumbnail
+											photoId={item.id}
+											fileName={item.fileName}
+										/>
 									) : (
 										<div className="flex h-full items-center justify-center text-xs text-[#73716b]">
-											{item.mediaType === "VIDEO"
-												? "Video · open to play"
-												: item.status.replaceAll("_", " ").toLowerCase()}
+											{item.status.replaceAll("_", " ").toLowerCase()}
 										</div>
 									)}
 								</button>
