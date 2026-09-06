@@ -128,7 +128,7 @@ export function CollectionGalleryPage() {
 			<details className="relative hidden sm:block">
 				<summary
 					aria-label={`Sort: ${sortLabel}`}
-					className={`flex min-h-10 cursor-pointer list-none items-center whitespace-nowrap border-b px-2 text-[#53514c] hover:text-[#1c1c1a] ${galleryOptions.sort !== "captured_desc" ? "border-[#8d8981]" : "border-transparent"}`}
+					className={`flex min-h-10 cursor-pointer list-none items-center whitespace-nowrap border-b px-2 font-medium text-[#4f4e4a] hover:text-[#181817] ${galleryOptions.sort !== "captured_desc" ? "border-[#74716b]" : "border-transparent"}`}
 				>
 					Sort
 				</summary>
@@ -179,7 +179,7 @@ export function CollectionGalleryPage() {
 			<details className="relative hidden sm:block">
 				<summary
 					aria-label={`Uploader: ${selectedUploader?.displayName ?? "All uploaders"}`}
-					className={`flex min-h-10 cursor-pointer list-none items-center whitespace-nowrap border-b px-2 text-[#53514c] hover:text-[#1c1c1a] ${galleryOptions.uploaderId !== null ? "border-[#8d8981]" : "border-transparent"}`}
+					className={`flex min-h-10 cursor-pointer list-none items-center whitespace-nowrap border-b px-2 font-medium text-[#4f4e4a] hover:text-[#181817] ${galleryOptions.uploaderId !== null ? "border-[#74716b]" : "border-transparent"}`}
 				>
 					Uploader
 				</summary>
@@ -231,7 +231,7 @@ export function CollectionGalleryPage() {
 			<details className="relative hidden sm:block">
 				<summary
 					aria-label={`Media type: ${mediaLabel}`}
-					className={`flex min-h-10 cursor-pointer list-none items-center whitespace-nowrap border-b px-2 text-[#53514c] hover:text-[#1c1c1a] ${galleryOptions.media !== "all" ? "border-[#8d8981]" : "border-transparent"}`}
+					className={`flex min-h-10 cursor-pointer list-none items-center whitespace-nowrap border-b px-2 font-medium text-[#4f4e4a] hover:text-[#181817] ${galleryOptions.media !== "all" ? "border-[#74716b]" : "border-transparent"}`}
 				>
 					Media type
 				</summary>
@@ -259,7 +259,7 @@ export function CollectionGalleryPage() {
 			</details>
 			{collection.data?.canManage ? (
 				<details className="relative hidden sm:block">
-					<summary className="flex min-h-10 cursor-pointer list-none items-center border-b border-transparent px-2 text-[#53514c] hover:text-[#1c1c1a]">
+					<summary className="flex min-h-10 cursor-pointer list-none items-center border-b border-transparent px-2 font-medium text-[#4f4e4a] hover:text-[#181817]">
 						More
 					</summary>
 					<div className="absolute right-0 z-50 mt-2 w-44 rounded-lg border border-[#d8d4cb] bg-[rgba(253,252,248,0.96)] p-2 backdrop-blur-md">
@@ -288,7 +288,7 @@ export function CollectionGalleryPage() {
 				</details>
 			) : null}
 			<details className="relative sm:hidden">
-				<summary className="flex min-h-10 cursor-pointer list-none items-center border-b border-transparent px-1 text-[#53514c] hover:text-[#1c1c1a]">
+				<summary className="flex min-h-10 cursor-pointer list-none items-center border-b border-transparent px-1 font-medium text-[#4f4e4a] hover:text-[#181817]">
 					More
 				</summary>
 				<div className="fixed left-3 right-3 top-[4.5rem] z-50 max-h-[calc(100dvh-5.25rem)] overflow-y-auto rounded-lg border border-[#d8d4cb] bg-[rgba(253,252,248,0.97)] p-2 text-sm backdrop-blur-md">

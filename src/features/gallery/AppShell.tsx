@@ -48,7 +48,7 @@ export function AppShell({
 	return (
 		<div className="min-h-screen bg-[#f7f6f2] text-[#1c1c1a]">
 			<header className="sticky top-3 z-40 mx-3 mb-3 sm:top-4 sm:mx-4 sm:mb-4">
-				<div className="mx-auto flex h-14 w-full items-center rounded-full border border-white/80 bg-[rgba(247,246,242,0.68)] px-1 backdrop-blur-md sm:grid sm:w-[min(1040px,calc(100vw-2rem))] sm:grid-cols-[1fr_auto_1fr] sm:px-4">
+				<div className="mx-auto flex h-[52px] w-full items-center rounded-full border border-black/10 bg-[rgba(255,255,255,0.72)] px-1 backdrop-blur-lg sm:grid sm:w-[min(980px,calc(100vw-2rem))] sm:grid-cols-[1fr_auto_1fr] sm:px-4">
 					<nav
 						aria-label="Primary"
 						className="flex shrink-0 items-center gap-1 text-sm sm:justify-self-start sm:gap-2"
@@ -56,7 +56,7 @@ export function AppShell({
 						<NavLink
 							to="/albums"
 							className={({ isActive }) =>
-								`flex min-h-10 items-center border-b px-1 sm:px-1.5 ${isActive ? "border-[#1c1c1a] text-[#1c1c1a]" : "border-transparent text-[#64625d] hover:text-[#1c1c1a]"}`
+								`flex min-h-10 items-center border-b px-1 font-medium sm:px-1.5 ${isActive ? "border-[#181817] text-[#181817]" : "border-transparent text-[#6a6863] hover:text-[#181817]"}`
 							}
 						>
 							Albums
@@ -64,14 +64,14 @@ export function AppShell({
 						<NavLink
 							to="/loved"
 							className={({ isActive }) =>
-								`flex min-h-10 items-center border-b px-1 sm:px-1.5 ${isActive ? "border-[#1c1c1a] text-[#1c1c1a]" : "border-transparent text-[#64625d] hover:text-[#1c1c1a]"}`
+								`flex min-h-10 items-center border-b px-1 font-medium sm:px-1.5 ${isActive ? "border-[#181817] text-[#181817]" : "border-transparent text-[#6a6863] hover:text-[#181817]"}`
 							}
 						>
 							Loved
 						</NavLink>
 					</nav>
 					{actions ? (
-						<div className="min-w-0 flex-1 text-xs sm:flex sm:flex-none sm:items-center sm:justify-self-center sm:border-x sm:border-[#bdb9b0]/70 sm:px-3 sm:text-sm">
+						<div className="min-w-0 flex-1 text-xs sm:flex sm:flex-none sm:items-center sm:justify-self-center sm:border-x sm:border-black/10 sm:px-3 sm:text-sm">
 							{actions}
 						</div>
 					) : (
@@ -82,13 +82,13 @@ export function AppShell({
 							<button
 								type="button"
 								onClick={onUpload}
-								className="flex min-h-10 shrink-0 items-center rounded-full border border-[#bdb9b0]/80 px-2.5 text-sm font-medium text-[#2e2d2a] transition-colors hover:bg-white/45 sm:px-3.5"
+								className="flex min-h-9 shrink-0 items-center rounded-full border border-black/15 bg-white/25 px-2.5 text-sm font-medium text-[#181817] transition-colors hover:bg-white/70 sm:px-3.5"
 							>
 								Upload
 							</button>
 						) : null}
 						<details className="group relative ml-0.5 sm:ml-1">
-							<summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 px-1 text-sm text-[#53514c] transition-colors marker:hidden hover:text-[#1c1c1a] sm:px-2">
+							<summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 px-1 text-sm font-medium text-[#4f4e4a] transition-colors marker:hidden hover:text-[#181817] sm:px-2">
 								{me.data?.avatarUrl ? (
 									<img
 										src={me.data.avatarUrl}
