@@ -48,7 +48,7 @@ export function AppShell({
 	return (
 		<div className="min-h-screen bg-[#f7f6f2] text-[#1c1c1a]">
 			<header className="sticky top-3 z-40 mx-3 mb-3 sm:top-4 sm:mx-4 sm:mb-4">
-				<div className="mx-auto flex h-14 w-full items-center rounded-xl border border-white/75 bg-[rgba(247,246,242,0.74)] px-1 backdrop-blur-md sm:grid sm:w-[min(1040px,calc(100vw-2rem))] sm:grid-cols-[1fr_auto_1fr] sm:px-4">
+				<div className="mx-auto flex h-14 w-full items-center rounded-full border border-white/80 bg-[rgba(247,246,242,0.68)] px-1 backdrop-blur-md sm:grid sm:w-[min(1040px,calc(100vw-2rem))] sm:grid-cols-[1fr_auto_1fr] sm:px-4">
 					<nav
 						aria-label="Primary"
 						className="flex shrink-0 items-center gap-1 text-sm sm:justify-self-start sm:gap-2"
